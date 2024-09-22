@@ -1,0 +1,6 @@
+class GamesUseCase:
+    def __init__(self) -> None:
+        ...
+
+    async def create_game(self):
+        ...

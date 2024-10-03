@@ -1,6 +1,0 @@
-class PlayersUseCase:
-    def __init__(self) -> None:
-        ...
-
-    async def create_player_profile(self):
-        ...

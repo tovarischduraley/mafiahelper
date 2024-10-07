@@ -1,2 +1,2 @@
-from .players import CreatePlayerSchema, PlayerSchema
+from .users import CreateUserSchema, UserSchema
 from .games import CreateGameSchema, GameSchema, UpdateGameSchema

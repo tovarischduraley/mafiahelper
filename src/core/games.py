@@ -1,4 +1,14 @@
-from enum import StrEnum
+from enum import StrEnum, IntEnum
+
+MIN_PLAYERS = 9
+MAX_PLAYERS = 10
+
+
+class RolesQuantity(IntEnum):
+    CIVILIAN = 6
+    MAFIA = 2
+    SHERIFF = 1
+    DON = 1
 
 
 class GameResults(StrEnum):
@@ -10,6 +20,7 @@ class GameResults(StrEnum):
 class GameStatuses(StrEnum):
     DRAFT = "draft"
     ENDED = "ended"
+
 
 class Roles(StrEnum):
     MAFIA = "mafia"

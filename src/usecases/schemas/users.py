@@ -1,12 +1,13 @@
 from pydantic import BaseModel
 
 
-class CreatePlayerSchema(BaseModel):
+class CreateUserSchema(BaseModel):
     fio: str | None = None
     nickname: str | None = None
 
 
-class PlayerSchema(BaseModel):
+class UserSchema(BaseModel):
     id: int
     fio: str | None
     nickname: str | None
+

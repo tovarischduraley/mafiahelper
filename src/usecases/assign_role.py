@@ -6,5 +6,5 @@ class AssignRoleUseCase:
     def __init__(self, db: DBRepositoryInterface):
         self._db = db
 
-    async def assign_role(self, player_id: int, game_id: int, role: Roles) -> None:
+    async def assign_role(self, user_id: int, game_id: int, role: Roles) -> None:
         ...

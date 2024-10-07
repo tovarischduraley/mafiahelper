@@ -16,6 +16,7 @@ class UpdateGameSchema(BaseModel):
     result: core.GameResults | None = None
     status: core.GameStatuses | None = None
     players: list[PlayerSchema] | None = None
+    created_at: datetime.datetime | None = None
 
 
 class GameSchema(BaseModel):
@@ -23,11 +24,12 @@ class GameSchema(BaseModel):
     result: core.GameResults | None
     status: core.GameStatuses
     players: list[PlayerSchema]
-    date: datetime.date
+    created_at: datetime.datetime
 
 
 class CreateGameSchema(BaseModel):
-    players: list[PlayerSchema] = []
-    status: core.GameStatuses = core.GameStatuses.DRAFT
-    result: core.GameResults | None = None
-    comment: str = ""
+    players: list[PlayerSchema]
+    status: core.GameStatuses
+    result: core.GameResults | None
+    comment: str
+    created_at: datetime.datetime

@@ -1,4 +1,4 @@
-from datetime import datetime as dt
+import datetime
 from typing import Optional
 
 from sqlalchemy import ForeignKey
@@ -23,7 +23,7 @@ class Game(Base):
     result: Mapped[str] = mapped_column(nullable=True)
     status: Mapped[str] = mapped_column(nullable=False)
     comments: Mapped[str] = mapped_column(nullable=False, default="")
-    datetime: Mapped[dt] = mapped_column(nullable=False)
+    created_at: Mapped[datetime.datetime] = mapped_column(nullable=False)
 
 
 class UsersGames(Base):

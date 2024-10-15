@@ -15,7 +15,7 @@ class DBConfig(BaseSettings):
 
 
 class Settings(BaseModel):
-    db_config: DBConfig
+    db_config: DBConfig = DBConfig()
 
 
 settings = Settings()

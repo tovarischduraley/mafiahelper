@@ -1,5 +1,11 @@
 services:
-  app:
-    build: .
   db:
     image: postgres:12.4-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: mafia
+      POSTGRES_USER: mafia
+      POSTGRES_PASSWORD: mafia
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data/pgdata

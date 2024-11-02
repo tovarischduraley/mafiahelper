@@ -9,9 +9,9 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
 
-sys.path.append(os.path.join(sys.path[0], "src"))  # noqa
-from repositories.db.models import Base
+sys.path.append(os.path.join(sys.path[0], "src"))
 from config import settings
+from repositories.db.models import Base
 
 config = context.config
 

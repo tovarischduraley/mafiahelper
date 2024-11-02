@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Self
 
-from usecases.schemas import CreateUserSchema, UpdateGameSchema, CreateGameSchema, UserSchema
+from usecases.schemas import CreateGameSchema, CreateUserSchema, UpdateGameSchema, UserSchema
 
 
 class DBRepositoryInterface(ABC):

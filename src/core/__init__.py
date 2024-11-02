@@ -1,8 +1,8 @@
 from .games import (
     MAX_PLAYERS,
-    GameStatuses,
-    GameResults,
     MIN_PLAYERS,
+    GameResults,
+    GameStatuses,
     Roles,
     RolesQuantity,
 )

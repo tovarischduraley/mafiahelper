@@ -1,4 +1,4 @@
-from enum import StrEnum, IntEnum
+from enum import IntEnum, StrEnum
 
 MIN_PLAYERS = 9
 MAX_PLAYERS = 10

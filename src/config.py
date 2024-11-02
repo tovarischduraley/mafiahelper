@@ -1,21 +1,24 @@
-from pydantic import BaseModel
+from dotenv import find_dotenv, load_dotenv
 from pydantic_settings import BaseSettings
+
+load_dotenv(find_dotenv())
 
 
 class DBConfig(BaseSettings):
-    db_host: str
-    db_name: str
-    db_user: str
-    db_password: str
-    db_port: int
+    DB_HOST: str
+    DB_NAME: str
+    DB_USER: str
+    DB_PASSWORD: str
+    DB_PORT: int
 
     @property
     def db_url(self) -> str:
-        return f"postgresql+asyncpg://{self.db_user}:{self.db_password}@{self.db_host}:{self.db_port}/{self.db_name}"
+        return f"postgresql+asyncpg://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
 
 
-class Settings(BaseModel):
+class Settings(BaseSettings):
     db_config: DBConfig = DBConfig()
+    TELEGRAM_BOT_TOKEN: str
 
 
 settings = Settings()

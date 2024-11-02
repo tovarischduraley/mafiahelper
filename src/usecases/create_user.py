@@ -3,7 +3,7 @@ from usecases.interfaces import DBRepositoryInterface
 from usecases.schemas import CreateUserSchema
 
 
-class CreateUserService:
+class CreateUserUseCase:
     def __init__(self, db: DBRepositoryInterface) -> None:
         self._db = db
 

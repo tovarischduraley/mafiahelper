@@ -29,7 +29,7 @@ class DBRepository(DBRepositoryInterface):
         query = select(User)
         if fio_or_nickname__in is not None:
             query = query.where(User.fio.in_(fio_or_nickname__in))
-        raw_users = await self._session.execute(query)
+        raw_users = (await self._session.scalars(query)).all()
         return [UserSchema.model_validate(u, from_attributes=True) for u in raw_users]
 
     async def update_game(self, data: UpdateGameSchema) -> None:

@@ -7,5 +7,4 @@ services:
       POSTGRES_DB: mafia
       POSTGRES_USER: mafia
       POSTGRES_PASSWORD: mafia
-    volumes:
-      - ./pgdata:/var/lib/postgresql/data/pgdata
+      PGDATA: /var/lib/postgresql/data/pgdata

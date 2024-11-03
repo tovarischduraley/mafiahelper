@@ -1,17 +1,16 @@
 import asyncio
 import logging
 
-from aiogram.utils.formatting import Bold
-
 import keyboards
 from aiogram import Bot, Dispatcher, F, types
 from aiogram.filters.command import Command
 from aiogram.fsm.context import FSMContext
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from bot.states import CreateUserStates
 from config import settings
 from dependencies import container
-from usecases import CreateUserUseCase, GetUsersUseCase
+from usecases import CreateGameUseCase, CreateUserUseCase, GetUsersUseCase
 from usecases.schemas import CreateUserSchema
 
 logging.basicConfig(level=logging.INFO)
@@ -62,6 +61,17 @@ async def process_user_nickname(message: types.Message, state: FSMContext):
         reply_markup=keyboards.menu,
     )
     await state.clear()
+
+
+@dp.message(F.text.lower() == "создать игру")
+async def create_game(message: types.Message):
+    uc: CreateGameUseCase = container.resolve(CreateGameUseCase)
+    date = message.forward_date.date()
+    game = await uc.create_game_in_draft(date)
+    builder = InlineKeyboardBuilder()
+    for number in range(1, 11):
+        builder.button(text=f"{number}. FIO")
+    await message.answer(text=f"Игра {date.strftime("%d.%m.%Y")}", reply_markup=builder.as_markup())
 
 
 async def main():

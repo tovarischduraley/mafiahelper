@@ -3,7 +3,8 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from config import DBConfig
 from repositories.db import DBRepository
-from usecases import CreateUserUseCase, GetUsersUseCase
+from usecases import CreateGameUseCase, CreateUserUseCase, GetUsersUseCase
+from usecases.get_game import GetGameUseCase
 from usecases.interfaces import DBRepositoryInterface
 
 container = Container()
@@ -21,5 +22,8 @@ session_factory = async_sessionmaker(autocommit=False, autoflush=False, bind=eng
 
 
 container.register(DBRepositoryInterface, factory=DBRepository, session_factory=session_factory)
+container.register(DBRepository, factory=DBRepository, session_factory=session_factory)
 container.register(CreateUserUseCase, factory=CreateUserUseCase)
 container.register(GetUsersUseCase, factory=GetUsersUseCase)
+container.register(CreateGameUseCase, factory=CreateGameUseCase)
+container.register(GetGameUseCase, factory=GetGameUseCase)

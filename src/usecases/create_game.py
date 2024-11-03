@@ -11,6 +11,11 @@ class CreateGameUseCase:
         self._db = db
 
     @staticmethod
+    def _validate_unique_players(players: list[PlayerSchema]) -> None:
+        if len(players) != len({p.id for p in players}):
+            raise ValidationError("Some user is duplicated in game")
+
+    @staticmethod
     def _validate_roles_quantity(players: list[PlayerSchema]) -> None:
         roles_in_game = {
             core.Roles.MAFIA: 0,
@@ -21,11 +26,10 @@ class CreateGameUseCase:
         for player in players:
             roles_in_game[player.role] += 1
         if (
-                roles_in_game[core.Roles.SHERIFF] != core.RolesQuantity.SHERIFF
-                or roles_in_game[core.Roles.DON] != core.RolesQuantity.DON
-                or roles_in_game[core.Roles.MAFIA] != core.RolesQuantity.MAFIA
-                or roles_in_game[core.Roles.CIVILIAN] not in [core.RolesQuantity.CIVILIAN,
-                                                              core.RolesQuantity.CIVILIAN - 1]
+            roles_in_game[core.Roles.SHERIFF] != core.RolesQuantity.SHERIFF
+            or roles_in_game[core.Roles.DON] != core.RolesQuantity.DON
+            or roles_in_game[core.Roles.MAFIA] != core.RolesQuantity.MAFIA
+            or roles_in_game[core.Roles.CIVILIAN] not in [core.RolesQuantity.CIVILIAN, core.RolesQuantity.CIVILIAN - 1]
         ):
             raise ValidationError(f"Roles distribution is not correct {roles_in_game=}")
 
@@ -45,15 +49,15 @@ class CreateGameUseCase:
             raise ValidationError("Players numbers are not valid")
 
     async def create_game_in_draft(self, created_at: datetime.datetime) -> None:
-        await self._db.create_game(
-            CreateGameSchema(
-                players=[],
-                status=core.GameStatuses.DRAFT,
-                resilt=None,
-                comment="",
-                created_at=created_at,
+        async with self._db as db:
+            return await db.create_game(
+                CreateGameSchema(
+                    players=[],
+                    status=core.GameStatuses.DRAFT,
+                    result=None,
+                    comments="",
+                    created_at=created_at,
+                )
             )
-        )
 
-    async def end_game(self, game_id: int) -> None:
-        ...
+    async def end_game(self, game_id: int) -> None: ...

@@ -2,11 +2,13 @@ from typing import Self
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker
+from sqlalchemy.orm import joinedload
 
 from usecases.interfaces import DBRepositoryInterface
-from usecases.schemas import CreateGameSchema, CreateUserSchema, UpdateGameSchema, UserSchema
+from usecases.schemas import CreateGameSchema, CreateUserSchema, GameSchema, UpdateGameSchema, UserSchema
+from usecases.schemas.games import PlayerSchema
 
-from .models import User
+from .models import Game, User, UserGame
 
 
 class DBRepository(DBRepositoryInterface):
@@ -32,8 +34,43 @@ class DBRepository(DBRepositoryInterface):
         raw_users = (await self._session.scalars(query)).all()
         return [UserSchema.model_validate(u, from_attributes=True) for u in raw_users]
 
-    async def update_game(self, data: UpdateGameSchema) -> None:
-        ...
+    async def get_game_by_id(self, game_id: int) -> GameSchema:
+        query = select(Game).where(Game.id == game_id).options(joinedload(Game.players).joinedload(UserGame.player))
+        game = (await self._session.scalars(query)).first()
+        # print(game.players[0].__dict__)
+        # from sqlalchemy.dialects import postgresql
+
+        # print(query.compile(dialect=postgresql.dialect()))
+
+        return GameSchema(
+            id=game.id,
+            comments=game.comments,
+            result=game.result,
+            status=game.status,
+            players=[
+                PlayerSchema(
+                    id=p.player.id,
+                    fio=p.player.fio,
+                    nickname=p.player.nickname,
+                    role=p.role,
+                    number=p.number,
+                )
+                for p in game.players
+            ],
+            created_at=game.created_at,
+        )
+
+    async def update_game(self, data: UpdateGameSchema) -> None: ...
 
     async def create_game(self, data: CreateGameSchema) -> None:
-        pass
+        game = Game(
+            created_at=data.created_at,
+            status=data.status,
+            result=data.result,
+            comments=data.comments,
+        )
+        self._session.add(game)
+        await self._session.flush()
+        game_players = [UserGame(game_id=game.id, user_id=p.id, role=p.role, number=p.number) for p in data.players]
+        self._session.add_all(game_players)
+        await self._session.commit()

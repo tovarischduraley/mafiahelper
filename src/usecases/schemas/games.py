@@ -12,7 +12,7 @@ class PlayerSchema(UserSchema):
 
 
 class UpdateGameSchema(BaseModel):
-    comment: str | None = None
+    comments: str | None = None
     result: core.GameResults | None = None
     status: core.GameStatuses | None = None
     players: list[PlayerSchema] | None = None
@@ -20,7 +20,8 @@ class UpdateGameSchema(BaseModel):
 
 
 class GameSchema(BaseModel):
-    comment: str
+    id: int
+    comments: str
     result: core.GameResults | None
     status: core.GameStatuses
     players: list[PlayerSchema]
@@ -31,5 +32,5 @@ class CreateGameSchema(BaseModel):
     players: list[PlayerSchema]
     status: core.GameStatuses
     result: core.GameResults | None
-    comment: str
+    comments: str
     created_at: datetime.datetime

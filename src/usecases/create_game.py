@@ -4,6 +4,7 @@ import core
 from usecases.errors import ValidationError
 from usecases.interfaces import DBRepositoryInterface
 from usecases.schemas import CreateGameSchema, PlayerSchema
+from usecases.schemas.games import GameSchema
 
 
 class CreateGameUseCase:
@@ -48,9 +49,9 @@ class CreateGameUseCase:
         if len({p.number for p in players}) != len(players):
             raise ValidationError("Players numbers are not valid")
 
-    async def create_game_in_draft(self, created_at: datetime.datetime) -> None:
+    async def create_game_in_draft(self, created_at: datetime.datetime) -> GameSchema:
         async with self._db as db:
-            return await db.create_game(
+            raw_game = await db.create_game(
                 CreateGameSchema(
                     players=[],
                     status=core.GameStatuses.DRAFT,
@@ -59,5 +60,6 @@ class CreateGameUseCase:
                     created_at=created_at,
                 )
             )
+            return await db.get_game_by_id(raw_game.id)
 
     async def end_game(self, game_id: int) -> None: ...

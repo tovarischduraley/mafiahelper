@@ -19,7 +19,19 @@ class UpdateGameSchema(BaseModel):
     created_at: datetime.datetime | None = None
 
 
+class RawGameSchema(BaseModel):
+    """Game with no nested objects"""
+
+    id: int
+    comments: str
+    result: core.GameResults | None
+    status: core.GameStatuses
+    created_at: datetime.datetime
+
+
 class GameSchema(BaseModel):
+    """Fullfilled Game"""
+
     id: int
     comments: str
     result: core.GameResults | None

@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Self
 
 from usecases.schemas import CreateGameSchema, CreateUserSchema, GameSchema, UpdateGameSchema, UserSchema
+from usecases.schemas.games import RawGameSchema
 
 
 class DBRepositoryInterface(ABC):
@@ -21,7 +22,7 @@ class DBRepositoryInterface(ABC):
     async def update_game(self, data: UpdateGameSchema) -> None: ...
 
     @abstractmethod
-    async def create_game(self, data: CreateGameSchema) -> None: ...
+    async def create_game(self, data: CreateGameSchema) -> RawGameSchema: ...
 
     @abstractmethod
     async def get_game_by_id(self, game_id: int) -> GameSchema: ...

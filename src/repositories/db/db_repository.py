@@ -4,9 +4,10 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.orm import joinedload
 
+from usecases.errors import NotFoundError
 from usecases.interfaces import DBRepositoryInterface
 from usecases.schemas import CreateGameSchema, CreateUserSchema, GameSchema, UpdateGameSchema, UserSchema
-from usecases.schemas.games import PlayerSchema
+from usecases.schemas.games import PlayerSchema, RawGameSchema
 
 from .models import Game, User, UserGame
 
@@ -37,11 +38,8 @@ class DBRepository(DBRepositoryInterface):
     async def get_game_by_id(self, game_id: int) -> GameSchema:
         query = select(Game).where(Game.id == game_id).options(joinedload(Game.players).joinedload(UserGame.player))
         game = (await self._session.scalars(query)).first()
-        # print(game.players[0].__dict__)
-        # from sqlalchemy.dialects import postgresql
-
-        # print(query.compile(dialect=postgresql.dialect()))
-
+        if not game:
+            raise NotFoundError(f"Game id={game_id} not found")
         return GameSchema(
             id=game.id,
             comments=game.comments,
@@ -62,7 +60,7 @@ class DBRepository(DBRepositoryInterface):
 
     async def update_game(self, data: UpdateGameSchema) -> None: ...
 
-    async def create_game(self, data: CreateGameSchema) -> None:
+    async def create_game(self, data: CreateGameSchema) -> RawGameSchema:
         game = Game(
             created_at=data.created_at,
             status=data.status,
@@ -73,4 +71,12 @@ class DBRepository(DBRepositoryInterface):
         await self._session.flush()
         game_players = [UserGame(game_id=game.id, user_id=p.id, role=p.role, number=p.number) for p in data.players]
         self._session.add_all(game_players)
+        result = RawGameSchema(
+            id=game.id,
+            created_at=game.created_at,
+            status=game.status,
+            result=game.result,
+            comments=game.comments,
+        )
         await self._session.commit()
+        return result

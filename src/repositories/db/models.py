@@ -2,11 +2,10 @@ import datetime
 from typing import Optional
 
 from sqlalchemy import ForeignKey
-from sqlalchemy.ext.asyncio import AsyncAttrs
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
-class Base(AsyncAttrs, DeclarativeBase): ...
+class Base(DeclarativeBase): ...
 
 
 class UserGame(Base):

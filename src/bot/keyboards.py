@@ -8,8 +8,3 @@ menu = ReplyKeyboardMarkup(
     resize_keyboard=True,
 )
 
-create_game_inline_keyboard = InlineKeyboardMarkup(
-    inline_keyboard=[
-        [InlineKeyboardButton(text="игроки", callback_data="game_players")]
-    ]
-)

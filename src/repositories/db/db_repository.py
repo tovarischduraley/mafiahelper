@@ -28,10 +28,19 @@ class DBRepository(DBRepositoryInterface):
         self._session.add(new_user)
         await self._session.commit()
 
-    async def get_users(self, fio_or_nickname__in: str | None) -> list[UserSchema]:
+    async def get_users(
+        self,
+        fio_or_nickname__ilike: str | None,
+        limit: int | None,
+        offset: int | None,
+    ) -> list[UserSchema]:
         query = select(User)
-        if fio_or_nickname__in is not None:
-            query = query.where(User.fio.in_(fio_or_nickname__in))
+        if fio_or_nickname__ilike is not None:
+            query = query.where(User.fio.in_(fio_or_nickname__ilike))
+        if offset is not None:
+            query = query.offset(offset)
+        if limit is not None:
+            query = query.limit(limit)
         raw_users = (await self._session.scalars(query)).all()
         return [UserSchema.model_validate(u, from_attributes=True) for u in raw_users]
 

@@ -1,7 +1,7 @@
-import keyboards
 from aiogram import F, Router, types
 from aiogram.fsm.context import FSMContext
 
+from bot import keyboards
 from bot.states import CreateUserStates
 from dependencies import container
 from usecases import CreateUserUseCase, GetUsersUseCase

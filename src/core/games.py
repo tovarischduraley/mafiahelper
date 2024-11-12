@@ -28,6 +28,10 @@ class Roles(StrEnum):
     SHERIFF = "sheriff"
     DON = "don"
 
+class Teams(StrEnum):
+    RED = "red"
+    BLACK = "black"
+
 
 def get_result_text(result: GameResults) -> str:
     match result:

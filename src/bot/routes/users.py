@@ -7,6 +7,8 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from bot import keyboards
 from bot.filters import UserCallbackFactory, UsersCurrentPageCallbackFactory
 from bot.states import CreateUserStates
+from bot.utils import get_role_emoji, get_team_emoji
+from core import Roles, Teams
 from dependencies import container
 from usecases import CreateUserUseCase, GetUserStatsUseCase, GetUsersUseCase
 from usecases.schemas import CreateUserSchema, UserSchema, UserStatsSchema
@@ -110,13 +112,13 @@ def _get_user_stats_text(user: UserStatsSchema) -> str:
         f"*{user.nickname}*\n"
         f"{user.fio}\n\n"
         f"Всего игр: {games_count_total_text}\n"
-        f"Общий процент побед: {win_percent_general_text}\n"
-        f"Процент побед в черной команде: {win_percent_black_team_text}\n"
-        f"Процент побед в красной команде: {win_percent_red_team_text}\n"
-        f"Процент побед за мирного жителя: {win_percent_as_civilian_text}\n"
-        f"Процент побед за мафию: {win_percent_as_mafia_text}\n"
-        f"Процент побед за дона: {win_percent_as_don_text}\n"
-        f"Процент побед за шерифа: {win_percent_as_sheriff_text}\n"
+        f"Общий процент побед: {win_percent_general_text}\n\n"
+        f"{get_team_emoji(Teams.BLACK)}\t Процент побед в черной команде: {win_percent_black_team_text}\n"
+        f"{get_team_emoji(Teams.RED)}\t Процент побед в красной команде: {win_percent_red_team_text}\n\n"
+        f"{get_role_emoji(Roles.CIVILIAN)}\t Процент побед за мирного жителя: {win_percent_as_civilian_text}\n"
+        f"{get_role_emoji(Roles.MAFIA)}\t Процент побед за мафию: {win_percent_as_mafia_text}\n"
+        f"{get_role_emoji(Roles.DON)}\t Процент побед за дона: {win_percent_as_don_text}\n"
+        f"{get_role_emoji(Roles.SHERIFF)}\t Процент побед за шерифа: {win_percent_as_sheriff_text}\n"
     )
 
 

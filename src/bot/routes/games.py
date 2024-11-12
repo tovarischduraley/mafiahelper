@@ -13,6 +13,7 @@ from bot.filters import (
     GameSeatPlayerRoleCallbackFactory,
     SelectResultCallbackFactory,
 )
+from bot.utils import get_role_emoji
 from dependencies import container
 from usecases import AssignPlayerToSeatUseCase, CreateGameUseCase, EndGameUseCase, GetGameUseCase, GetUsersUseCase
 from usecases.errors import ValidationError
@@ -32,7 +33,7 @@ def _get_game_keyboard(game: GameSchema) -> InlineKeyboardMarkup:
     for number in range(1, 11):
         player = _get_player_by_number(number, game.players)
         builder.button(
-            text=f"{number}. {player.nickname + " " + _get_role_emoji(player.role) if player else "--"}",
+            text=f"{number}. {player.nickname + " " + get_role_emoji(player.role) if player else "--"}",
             callback_data=GameSeatCallbackFactory(game_id=game.id, seat_number=number),
         )
     builder.button(text="Завершить игру", callback_data=SelectResultCallbackFactory(game_id=game.id))
@@ -40,23 +41,9 @@ def _get_game_keyboard(game: GameSchema) -> InlineKeyboardMarkup:
     return builder.as_markup()
 
 
-def _get_role_emoji(role: core.Roles) -> str:
-    match role:
-        case core.Roles.MAFIA:
-            return "⚫️"
-        case core.Roles.CIVILIAN:
-            return "🔴"
-        case core.Roles.DON:
-            return "🎩"
-        case core.Roles.SHERIFF:
-            return "🔎"
-        case _:
-            raise Exception(f"Unknown role <{role}>")
-
-
 def _get_end_game_text(game: GameSchema) -> str:
     sorted_players = sorted(game.players, key=lambda p: p.number)
-    players_text = "\n".join([f"{p.number} {p.nickname} {_get_role_emoji(p.role)}" for p in sorted_players])
+    players_text = "\n".join([f"{p.number} {p.nickname} {get_role_emoji(p.role)}" for p in sorted_players])
     return (
         f"Игра {game.created_at.strftime("%d.%m.%Y %H:%m")} завершена\n"
         f"Результат: {core.get_result_text(game.result)}\n\n"

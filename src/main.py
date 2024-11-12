@@ -1,10 +1,10 @@
 import asyncio
 import logging
 
-import keyboards
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters.command import Command
 
+from bot.keyboards import menu
 from bot.routes import games_router, users_router
 from config import settings
 
@@ -18,7 +18,7 @@ dp = Dispatcher()
 async def cmd_start(message: types.Message):
     await message.answer(
         text="Выберите опцию",
-        reply_markup=keyboards.menu,
+        reply_markup=menu,
     )
 
 

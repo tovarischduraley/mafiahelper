@@ -8,13 +8,15 @@ class GetUsersUseCase:
 
     async def get_users(
         self,
-        fio_or_nickname__ilike: str | None = None,
         limit: int | None = None,
         offset: int | None = None,
     ) -> list[UserSchema]:
         async with self._db as db:
             return await db.get_users(
-                fio_or_nickname__ilike=fio_or_nickname__ilike,
                 limit=limit,
                 offset=offset,
             )
+
+    async def get_users_count(self) -> int:
+        async with self._db as db:
+            return await db.get_users_count()

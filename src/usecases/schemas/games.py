@@ -15,8 +15,6 @@ class UpdateGameSchema(BaseModel):
     comments: str | None = None
     result: core.GameResults | None = None
     status: core.GameStatuses | None = None
-    players: list[PlayerSchema] | None = None
-    created_at: datetime.datetime | None = None
 
 
 class RawGameSchema(BaseModel):

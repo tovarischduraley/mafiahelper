@@ -5,4 +5,6 @@ from .games import (
     GameStatuses,
     Roles,
     RolesQuantity,
+    get_result_text,
+    get_win_result_by_user_role,
 )

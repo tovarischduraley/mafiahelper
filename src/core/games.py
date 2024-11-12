@@ -27,3 +27,25 @@ class Roles(StrEnum):
     CIVILIAN = "civilian"
     SHERIFF = "sheriff"
     DON = "don"
+
+
+def get_result_text(result: GameResults) -> str:
+    match result:
+        case GameResults.MAFIA_WON:
+            return "ПОБЕДА МАФИИ"
+        case GameResults.CIVILIANS_WON:
+            return "ПОБЕДА ГОРОДА"
+        case GameResults.DRAW:
+            return "НИЧЬЯ"
+        case _:
+            raise Exception(f"Game result <{result}> is invalid")
+
+
+def get_win_result_by_user_role(role: Roles) -> GameResults:
+    match role:
+        case Roles.CIVILIAN | Roles.SHERIFF:
+            return GameResults.CIVILIANS_WON
+        case Roles.MAFIA | Roles.DON:
+            return GameResults.MAFIA_WON
+        case _:
+            raise Exception(f"Role <{role}> is invalid")

@@ -11,7 +11,7 @@ services:
       - ".pgdata:/var/lib/postgresql@17/data/pgdata"
   bot:
     build: .
-    volumes:
-      - "./src:/app/src"
     env_file:
       - .env
+    depends_on:
+      - db

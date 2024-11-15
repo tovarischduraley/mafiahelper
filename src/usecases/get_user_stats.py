@@ -98,5 +98,6 @@ class GetUserStatsUseCase:
                 win_percent_as_don=self._get_percent(piece=won_as_don, total=total_as_don),
                 win_percent_as_sheriff=self._get_percent(piece=won_as_sheriff, total=total_as_sheriff),
             )
-    def _get_percent(self, piece: int, total: int) -> float | None:
+    @staticmethod
+    def _get_percent(piece: int, total: int) -> float | None:
         return round(piece / total * 100, 2) if total > 0 else None

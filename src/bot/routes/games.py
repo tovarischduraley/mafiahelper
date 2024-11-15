@@ -4,7 +4,6 @@ from aiogram import F, Router, types
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-import core
 from bot.filters import (
     EndGameCallbackFactory,
     GameCallbackFactory,
@@ -14,18 +13,33 @@ from bot.filters import (
     SelectResultCallbackFactory,
 )
 from bot.utils import get_role_emoji
+import core
 from dependencies import container
 from usecases import AssignPlayerToSeatUseCase, CreateGameUseCase, EndGameUseCase, GetGameUseCase, GetUsersUseCase
 from usecases.errors import ValidationError
-from usecases.schemas import GameSchema, PlayerSchema
+from usecases.schemas import GameSchema, PlayerSchema, UserSchema
 
 router = Router()
+USERS_PER_PAGE = 10
 
-
-def _get_player_by_number(number: int, players: list[PlayerSchema]) -> PlayerSchema:
+def _get_player_by_number(number: int, players: list[PlayerSchema]) -> PlayerSchema | None:
     if player := next(filter(lambda p: p.number == number, players), None):
         return player
     return None
+
+def _get_users_builder(users: list[UserSchema], seat_number: int, game_id: int) -> InlineKeyboardBuilder:
+    builder = InlineKeyboardBuilder()
+    for user in users:
+        builder.button(
+            text=f"{user.nickname}",
+            callback_data=GameSeatPlayerCallbackFactory(
+                game_id=game_id,
+                seat_number=seat_number,
+                player_id=user.id,
+            )
+        )
+    builder.adjust(2)
+    return builder
 
 
 def _get_game_keyboard(game: GameSchema) -> InlineKeyboardMarkup:
@@ -34,7 +48,7 @@ def _get_game_keyboard(game: GameSchema) -> InlineKeyboardMarkup:
         player = _get_player_by_number(number, game.players)
         builder.button(
             text=f"{number}. {player.nickname + " " + get_role_emoji(player.role) if player else "--"}",
-            callback_data=GameSeatCallbackFactory(game_id=game.id, seat_number=number),
+            callback_data=GameSeatCallbackFactory(game_id=game.id, seat_number=number, page=0),
         )
     builder.button(text="Завершить игру", callback_data=SelectResultCallbackFactory(game_id=game.id))
     builder.adjust(2)
@@ -148,31 +162,58 @@ async def select_role(callback_query: types.CallbackQuery, callback_data: GameSe
 
 @router.callback_query(GameSeatCallbackFactory.filter())
 async def select_player(callback_query: types.CallbackQuery, callback_data: GameSeatCallbackFactory):
-    builder = InlineKeyboardBuilder()
     uc: GetUsersUseCase = container.resolve(GetUsersUseCase)
-    users = await uc.get_users(limit=10)
-    for user in users:
-        builder.button(
-            text=f"{user.nickname}",
-            callback_data=GameSeatPlayerCallbackFactory(
-                game_id=callback_data.game_id,
-                seat_number=callback_data.seat_number,
-                player_id=user.id,
+    users = await uc.get_users(limit=USERS_PER_PAGE, offset=callback_data.page * USERS_PER_PAGE)
+    users_count = await uc.get_users_count()
+    builder = _get_users_builder(users, seat_number=callback_data.seat_number, game_id=callback_data.game_id)
+    builder.adjust(2)
+
+    buttons = []
+    if callback_data.page > 0:
+        buttons.append(
+            InlineKeyboardButton(
+                text="⬅️",
+                callback_data=GameSeatCallbackFactory(
+                    game_id=callback_data.game_id,
+                    seat_number=callback_data.seat_number,
+                    page=callback_data.page - 1
+                ).pack()
             ),
         )
-    builder.adjust(1)
-    builder.row(
-        InlineKeyboardButton(text="⬅️", callback_data="prev:0"),
-        InlineKeyboardButton(text="Отмена", callback_data=f"game:{callback_data.game_id}"),
-        InlineKeyboardButton(text="➡️", callback_data="next:1"),
-    )
+    else:
+        buttons.append(
+            InlineKeyboardButton(text=" ", callback_data="lorem-ipsum")
+        )
+    buttons.append(InlineKeyboardButton(
+        text="Отмена",
+        callback_data=GameCallbackFactory(game_id=callback_data.game_id).pack(),
+    ))
+    if users_count > len(users) + callback_data.page * USERS_PER_PAGE:
+        buttons.append(
+            InlineKeyboardButton(
+                text="➡️",
+                callback_data=GameSeatCallbackFactory(
+                    game_id=callback_data.game_id,
+                    seat_number=callback_data.seat_number,
+                    page=callback_data.page + 1
+                ).pack(),
+            )
+        )
+    else:
+        buttons.append(
+            InlineKeyboardButton(text=" ", callback_data="lorem-ipsum")
+        )
+    if buttons:
+        builder.row(*buttons,width=3)
 
     await callback_query.message.edit_text(
         text=f"Выберите игрока на стул №{callback_data.seat_number}",
         reply_markup=builder.as_markup(),
     )
     await callback_query.answer()
-
+@router.callback_query(F.data.lower() == "lorem-ipsum")
+async def lorem_ipsum(callback_query: types.CallbackQuery):
+    await callback_query.answer()
 
 @router.callback_query(GameCallbackFactory.filter())
 async def get_game_info(callback_query: types.CallbackQuery, callback_data: GameCallbackFactory):

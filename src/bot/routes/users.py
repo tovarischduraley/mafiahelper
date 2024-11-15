@@ -24,7 +24,7 @@ def _get_users_builder(users: list[UserSchema], from_page: int) -> InlineKeyboar
             text=f"{user.nickname}",
             callback_data=UserCallbackFactory(user_id=user.id, users_page=from_page).pack(),
         )
-    builder.adjust(1)
+    builder.adjust(2)
     return builder
 
 
@@ -34,13 +34,13 @@ async def players_list(message: types.Message):
     users = await uc.get_users(limit=USERS_PER_PAGE)
     users_count = await uc.get_users_count()
     builder = _get_users_builder(users, from_page=0)
-    builder.adjust(1)
+    builder.adjust(2)
     if not users:
         await message.answer(text="Список игроков пуст.", reply_markup=builder.as_markup())
         return
     if len(users) < users_count:
         builder.row(
-            InlineKeyboardButton(text="➡️", callback_data="next:1"),
+            InlineKeyboardButton(text="➡️", callback_data=UsersCurrentPageCallbackFactory(page=1).pack()),
         )
     await message.answer(text="Игроки:", reply_markup=builder.as_markup())
 
@@ -52,50 +52,23 @@ async def get_current_page_of_users(callback_query: CallbackQuery, callback_data
     users_count = await uc.get_users_count()
     builder = _get_users_builder(users, callback_data.page)
     builder.adjust(2)
-    btns = []
+    buttons = []
     if callback_data.page > 0:
-        btns.append(InlineKeyboardButton(text="⬅️", callback_data=f"prev:{callback_data.page - 1}"))
+        buttons.append(
+            InlineKeyboardButton(
+                text="⬅️",
+                callback_data=UsersCurrentPageCallbackFactory(page=callback_data.page - 1).pack(),
+            ),
+        )
     if users_count > len(users) + callback_data.page * USERS_PER_PAGE:
-        btns.append(InlineKeyboardButton(text="➡️", callback_data=f"next:{callback_data.page + 1}"))
-    if btns:
-        builder.row(*btns)
-    await callback_query.message.edit_text(text="Игроки:", reply_markup=builder.as_markup())
-    await callback_query.answer()
-
-
-@router.callback_query(F.data.startswith("next:"))
-async def get_next_users(callback_query: CallbackQuery):
-    current_page = int(callback_query.data.split(":")[-1])
-    uc: GetUsersUseCase = container.resolve(GetUsersUseCase)
-    users = await uc.get_users(limit=USERS_PER_PAGE, offset=current_page * USERS_PER_PAGE)
-    users_count = await uc.get_users_count()
-    builder = _get_users_builder(users, current_page)
-    builder.adjust(2)
-    if users_count > len(users) + current_page * USERS_PER_PAGE:
-        builder.row(
-            InlineKeyboardButton(text="⬅️", callback_data=f"prev:{current_page - 1}"),
-            InlineKeyboardButton(text="➡️", callback_data=f"next:{current_page + 1}"),
+        buttons.append(
+            InlineKeyboardButton(
+                text="➡️",
+                callback_data=UsersCurrentPageCallbackFactory(page=callback_data.page + 1).pack(),
+            )
         )
-    else:
-        builder.row(InlineKeyboardButton(text="⬅️", callback_data=f"prev:{current_page - 1}"))
-    await callback_query.message.edit_text(text="Игроки:", reply_markup=builder.as_markup())
-    await callback_query.answer()
-
-
-@router.callback_query(F.data.startswith("prev:"))
-async def get_prev_users(callback_query: CallbackQuery):
-    current_page = int(callback_query.data.split(":")[-1])
-    uc: GetUsersUseCase = container.resolve(GetUsersUseCase)
-    users = await uc.get_users(limit=USERS_PER_PAGE, offset=current_page * USERS_PER_PAGE)
-    builder = _get_users_builder(users, current_page)
-    builder.adjust(2)
-    if len(users) + current_page * USERS_PER_PAGE > USERS_PER_PAGE:
-        builder.row(
-            InlineKeyboardButton(text="⬅️", callback_data=f"prev:{current_page - 1}"),
-            InlineKeyboardButton(text="➡️", callback_data=f"next:{current_page + 1}"),
-        )
-    else:
-        builder.row(InlineKeyboardButton(text="➡️", callback_data=f"next:{current_page + 1}"))
+    if buttons:
+        builder.row(*buttons)
     await callback_query.message.edit_text(text="Игроки:", reply_markup=builder.as_markup())
     await callback_query.answer()
 

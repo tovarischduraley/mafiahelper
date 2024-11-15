@@ -19,6 +19,7 @@ class GameSeatPlayerCallbackFactory(CallbackData, prefix="game_seat_player"):
 class GameSeatCallbackFactory(CallbackData, prefix="game_seat"):
     game_id: int
     seat_number: int
+    page: int
 
 
 class GameCallbackFactory(CallbackData, prefix="game"):

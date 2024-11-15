@@ -5,15 +5,10 @@ services:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
-    volumes:
-      - ".pgdata:/var/lib/postgresql@17/data/pgdata"
-    env_file:
-      - .env
+    volumes: [".pgdata:/var/lib/postgresql@17/data/pgdata"]
+    env_file: .env
   bot:
     build: .
-    command:
-      - "sh ./entrypoint.sh"
-    env_file:
-      - .env
-    depends_on:
-      - db
+    command: "sh ./entrypoint.sh"
+    env_file: .env
+    depends_on: [db]

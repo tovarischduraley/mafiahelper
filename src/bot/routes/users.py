@@ -35,6 +35,9 @@ async def players_list(message: types.Message):
     users_count = await uc.get_users_count()
     builder = _get_users_builder(users, from_page=0)
     builder.adjust(1)
+    if not users:
+        await message.answer(text="Список игроков пуст.", reply_markup=builder.as_markup())
+        return
     if len(users) < users_count:
         builder.row(
             InlineKeyboardButton(text="➡️", callback_data="next:1"),

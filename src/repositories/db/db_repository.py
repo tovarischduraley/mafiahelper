@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.orm import joinedload
 
 import core
+from core import GameStatuses
 from usecases.errors import NotFoundError
 from usecases.interfaces import DBRepositoryInterface
 from usecases.schemas import CreateGameSchema, CreateUserSchema, GameSchema, UpdateGameSchema, UserSchema
@@ -40,7 +41,14 @@ class DBRepository(DBRepositoryInterface):
         limit: int | None,
         offset: int | None,
     ) -> list[UserSchema]:
-        query = select(User)
+        query = (
+            select(User, func.coalesce(func.count(Game.id), 0))
+            .outerjoin(UserGame, User.id == UserGame.user_id)
+            .outerjoin(Game, Game.id == UserGame.game_id)
+            .filter(or_(Game.status == GameStatuses.ENDED, Game.id == None)) # noqa: E711
+            .group_by(User.id)
+            .order_by(func.coalesce(func.count(Game.id), 0).desc())
+        )
         if offset is not None:
             query = query.offset(offset)
         if limit is not None:
@@ -120,7 +128,6 @@ class DBRepository(DBRepositoryInterface):
         games = (await self._session.execute(query)).scalars().unique().all()
         return [self._format_game(g) for g in games]
 
-        # return games
     async def add_player(self, game_id: int, user_id: int, seat_number: int, role: core.Roles) -> None:
         player = UserGame(
             user_id=user_id,

@@ -105,13 +105,13 @@ class FakeDBRepository(DBRepositoryInterface):
         status: core.GameStatuses | None = None,
         is_won: bool | None = None,
     ) -> list[GameSchema]:
-        games = self._games
+        games = self._games.values()
         if user_id:
             games = filter(lambda g: user_id in [p.id for p in g.players], games)
         if seat_number:
-            games = filter(lambda g: seat_number in [p.number for p in g.players], games)
+            games = filter(lambda g: seat_number in [p.number for p in g.players if p.id == user_id], games)
         if role__in:
-            games = filter(lambda g: set(role__in) & {p.role for p in g.players}, games)
+            games = filter(lambda g: set(role__in) & {p.role for p in g.players if p.id == user_id}, games)
         if result__in:
             games = filter(lambda g: g.result in result__in, games)
         if status:
@@ -120,7 +120,7 @@ class FakeDBRepository(DBRepositoryInterface):
             if not user_id:
                 raise Exception("TEST no user_id in filters")
             games = filter(lambda g: self._user_won(g, user_id), games)
-        return games
+        return list(games)
 
     @staticmethod
     def _user_won(game: GameSchema, user_id: int) -> bool:

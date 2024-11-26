@@ -4,6 +4,7 @@ from aiogram import F, Router, types
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
+import core
 from bot.filters import (
     EndGameCallbackFactory,
     GameCallbackFactory,
@@ -13,7 +14,6 @@ from bot.filters import (
     SelectResultCallbackFactory,
 )
 from bot.utils import get_role_emoji
-import core
 from dependencies import container
 from usecases import AssignPlayerToSeatUseCase, CreateGameUseCase, EndGameUseCase, GetGameUseCase, GetUsersUseCase
 from usecases.errors import ValidationError
@@ -22,10 +22,12 @@ from usecases.schemas import GameSchema, PlayerSchema, UserSchema
 router = Router()
 USERS_PER_PAGE = 10
 
+
 def _get_player_by_number(number: int, players: list[PlayerSchema]) -> PlayerSchema | None:
     if player := next(filter(lambda p: p.number == number, players), None):
         return player
     return None
+
 
 def _get_users_builder(users: list[UserSchema], seat_number: int, game_id: int) -> InlineKeyboardBuilder:
     builder = InlineKeyboardBuilder()
@@ -115,7 +117,7 @@ async def assign_player_to_seat(callback_query: types.CallbackQuery, callback_da
     game = await uc.assign_player_to_seat(
         game_id=callback_data.game_id,
         seat_number=callback_data.seat_number,
-        player_id=callback_data.player_id,
+        user_id=callback_data.player_id,
         role=callback_data.role,
     )
     await callback_query.message.edit_text(
@@ -204,16 +206,19 @@ async def select_player(callback_query: types.CallbackQuery, callback_data: Game
             InlineKeyboardButton(text=" ", callback_data="lorem-ipsum")
         )
     if buttons:
-        builder.row(*buttons,width=3)
+        builder.row(*buttons, width=3)
 
     await callback_query.message.edit_text(
         text=f"Выберите игрока на стул №{callback_data.seat_number}",
         reply_markup=builder.as_markup(),
     )
     await callback_query.answer()
+
+
 @router.callback_query(F.data.lower() == "lorem-ipsum")
 async def lorem_ipsum(callback_query: types.CallbackQuery):
     await callback_query.answer()
+
 
 @router.callback_query(GameCallbackFactory.filter())
 async def get_game_info(callback_query: types.CallbackQuery, callback_data: GameCallbackFactory):

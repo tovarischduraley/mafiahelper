@@ -1,6 +1,6 @@
 import datetime
+from contextlib import AbstractContextManager
 from contextlib import nullcontext as does_not_raise
-from typing import ContextManager
 
 import pytest
 
@@ -50,7 +50,7 @@ async def test_create_game_in_draft():
 async def test_end_game(
     game: GameSchema,
     game_result: GameResults,
-    expectation: ContextManager,
+    expectation: AbstractContextManager,
 ):
     with expectation:
         db = FakeDBRepository(games={game.id: game})
@@ -75,7 +75,7 @@ async def test_assign_player_to_seat(
     user: UserSchema,
     seat_number: int,
     role: Roles,
-    expectation: ContextManager,
+    expectation: AbstractContextManager,
 ):
     with expectation:
         db = FakeDBRepository(users={user.id: user}, games={game.id: game})

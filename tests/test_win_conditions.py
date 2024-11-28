@@ -1,5 +1,5 @@
+from contextlib import AbstractContextManager
 from contextlib import nullcontext as does_not_raise
-from typing import ContextManager
 
 import pytest
 
@@ -16,6 +16,6 @@ from src.core import GameResults, Roles, get_win_result_by_user_role
         ("SomeRole", ..., pytest.raises(Exception)),
     ),
 )
-def test_win_results(role: Roles, result: GameResults, expectation: ContextManager) -> None:
+def test_win_results(role: Roles, result: GameResults, expectation: AbstractContextManager) -> None:
     with expectation:
         assert get_win_result_by_user_role(role) == result

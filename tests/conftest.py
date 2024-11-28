@@ -201,6 +201,7 @@ def game_with_nine_players() -> GameSchema:
         ],
     )
 
+
 def _get_other_players(role: Roles) -> list[PlayerSchema]:
     roles = {
         Roles.DON: 1,
@@ -208,10 +209,13 @@ def _get_other_players(role: Roles) -> list[PlayerSchema]:
         Roles.MAFIA: 2,
         Roles.CIVILIAN: 6,
     }
+
     def _seq_seats_gen():
         yield from range(2, 11)
+
     seats_generator = _seq_seats_gen()
     users_generator = _gen_user(fios=TEST_FIOS.copy(), nicknames=TEST_NICKNAMES.copy())
+
     def _get_gen_by_role(role: Roles) -> Callable:
         match role:
             case Roles.CIVILIAN:
@@ -224,6 +228,7 @@ def _get_other_players(role: Roles) -> list[PlayerSchema]:
                 return don_player
             case _:
                 raise Exception("Got unknown role")
+
     roles[role] -= 1
     players = []
     for k, v in roles.items():
@@ -247,9 +252,11 @@ def ended_game_with_user(player: PlayerSchema, result: GameResults) -> GameSchem
         ],
     )
 
+
 def won_game(player: PlayerSchema) -> GameSchema:
     res = get_win_result_by_user_role(player.role)
     return ended_game_with_user(player, res)
+
 
 def lost_game(player: PlayerSchema) -> GameSchema:
     if get_win_result_by_user_role(player.role) == GameResults.MAFIA_WON:

@@ -1,3 +1,4 @@
+from contextlib import AbstractContextManager
 from contextlib import nullcontext as does_not_raise
 
 import pytest
@@ -78,7 +79,7 @@ sheriff = PlayerSchema(id=test_user.id, fio=test_user.fio, nickname=test_user.ni
 )
 @pytest.mark.asyncio
 async def test_user_stats(
-    user: UserSchema, games: list[GameSchema], stats: UserStatsSchema, expectation: UserStatsSchema
+    user: UserSchema, games: list[GameSchema], stats: UserStatsSchema, expectation: AbstractContextManager
 ):
     db = FakeDBRepository(games={game.id: game for game in games}, users={user.id: user})
     uc = GetUserStatsUseCase(db)

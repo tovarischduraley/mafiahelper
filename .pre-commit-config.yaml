@@ -3,3 +3,11 @@ repos:
   rev: v0.8.0
   hooks:
     - id: ruff
+- repo: local
+  hooks:
+    - id: pytest-check
+      name: pytest-check
+      entry: python -m pytest -v .
+      language: system
+      pass_filenames: false
+      always_run: true

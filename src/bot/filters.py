@@ -1,3 +1,5 @@
+import time
+
 from aiogram.filters.callback_data import CallbackData
 
 import core
@@ -42,3 +44,8 @@ class UserCallbackFactory(CallbackData, prefix="user"):
 
 class UsersCurrentPageCallbackFactory(CallbackData, prefix="users"):
     page: int
+
+
+class GetSeatCallbackFactory(CallbackData, prefix="seats"):
+    allowed_seats: str | None
+    timestamp: str = str(time.time() * 1000)

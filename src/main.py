@@ -4,9 +4,11 @@ import logging
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters.command import Command
 
-from bot.keyboards import menu
+from bot.auth import validate_admin
+from bot.keyboards import admin_kb, user_kb
 from bot.routes import games_router, users_router
 from config import settings
+from usecases.errors import ForbiddenError
 
 logging.basicConfig(level=logging.INFO)
 
@@ -16,10 +18,17 @@ dp = Dispatcher()
 
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
-    await message.answer(
-        text="Выберите опцию",
-        reply_markup=menu,
-    )
+    try:
+        validate_admin(message.from_user.id)
+        await message.answer(
+            text="Выберите опцию",
+            reply_markup=admin_kb,
+        )
+    except ForbiddenError:
+        await message.answer(
+            text="Выберите опцию",
+            reply_markup=user_kb,
+        )
 
 
 async def main():

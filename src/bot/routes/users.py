@@ -5,6 +5,7 @@ from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMar
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from bot import keyboards
+from bot.auth import validate_admin
 from bot.filters import UserCallbackFactory, UsersCurrentPageCallbackFactory
 from bot.states import CreateUserStates
 from bot.utils import get_role_emoji, get_team_emoji
@@ -106,8 +107,7 @@ async def user_detail(callback_query: CallbackQuery, callback_data: UserCallback
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text="Назад",
-                    callback_data=UsersCurrentPageCallbackFactory(page=callback_data.users_page).pack()
+                    text="Назад", callback_data=UsersCurrentPageCallbackFactory(page=callback_data.users_page).pack()
                 )
             ],
         ]
@@ -120,12 +120,14 @@ async def user_detail(callback_query: CallbackQuery, callback_data: UserCallback
 
 @router.message(F.text.lower() == "создать игрока")
 async def create_player(message: types.Message, state: FSMContext):
+    validate_admin(message.from_user.id)
     await message.answer("Введите ФИО игрока")
     await state.set_state(CreateUserStates.waiting_fio)
 
 
 @router.message(CreateUserStates.waiting_fio, F.text)
 async def process_user_fio(message: types.Message, state: FSMContext):
+    validate_admin(message.from_user.id)
     await state.update_data(fio=message.text)
     await message.answer("Введите игровой псевдоним игрока")
     await state.set_state(CreateUserStates.waiting_nickname)
@@ -133,12 +135,13 @@ async def process_user_fio(message: types.Message, state: FSMContext):
 
 @router.message(CreateUserStates.waiting_nickname, F.text)
 async def process_user_nickname(message: types.Message, state: FSMContext):
+    validate_admin(message.from_user.id)
     await state.update_data(nickname=message.text)
     uc: CreateUserUseCase = container.resolve(CreateUserUseCase)
     user_data = await state.get_data()
     await uc.create_user(CreateUserSchema(**user_data))
     await message.answer(
         text=f"Вы создали игрока!\n\nИмя: {user_data["fio"]}\nПсевдоним: {user_data["nickname"]}",
-        reply_markup=keyboards.menu,
+        reply_markup=keyboards.admin_kb,
     )
     await state.clear()

@@ -53,7 +53,7 @@ class EndGameUseCase:
                 data=UpdateGameSchema(result=result, status=core.GameStatuses.ENDED),
             )
             game = await db.get_game_by_id(game_id)
-            self._validate_game_result(game)
+            self._validate_game_result(game.result)
             self._validate_players_numbers(game.players)
             self._validate_players_quantity(game.players)
             self._validate_roles_quantity(game.players)

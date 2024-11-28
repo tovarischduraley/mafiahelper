@@ -135,7 +135,7 @@ def valid_game() -> GameSchema:
         comments="",
         result=None,
         status=GameStatuses.DRAFT,
-        created_at=datetime.datetime.now(),
+        created_at=datetime.datetime.now(datetime.timezone.utc),
         players=[
             don_player(seats_generator, users_generator),
             sheriff_player(seats_generator, users_generator),
@@ -153,7 +153,7 @@ def game_with_invalid_roles_distribution() -> GameSchema:
         comments="",
         result=None,
         status=GameStatuses.DRAFT,
-        created_at=datetime.datetime.now(),
+        created_at=datetime.datetime.now(datetime.timezone.utc),
         players=[
             don_player(seats_generator, users_generator),
             sheriff_player(seats_generator, users_generator),
@@ -171,7 +171,7 @@ def game_with_invalid_players_quantity() -> GameSchema:
         comments="",
         result=None,
         status=GameStatuses.DRAFT,
-        created_at=datetime.datetime.now(),
+        created_at=datetime.datetime.now(datetime.timezone.utc),
         players=[
             don_player(seats_generator, users_generator),
             sheriff_player(seats_generator, users_generator),
@@ -192,7 +192,7 @@ def game_with_nine_players() -> GameSchema:
         comments="",
         result=None,
         status=GameStatuses.DRAFT,
-        created_at=datetime.datetime.now(),
+        created_at=datetime.datetime.now(datetime.timezone.utc),
         players=[
             don_player(seats_generator, users_generator),
             sheriff_player(seats_generator, users_generator),
@@ -245,7 +245,7 @@ def ended_game_with_user(player: PlayerSchema, result: GameResults) -> GameSchem
         comments="",
         result=result,
         status=GameStatuses.ENDED,
-        created_at=datetime.datetime.now(),
+        created_at=datetime.datetime.now(datetime.timezone.utc),
         players=[
             player,
             *other_players,

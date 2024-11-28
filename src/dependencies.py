@@ -12,6 +12,7 @@ from usecases import (
 )
 from usecases.end_game import EndGameUseCase
 from usecases.get_game import GetGameUseCase
+from usecases.get_seat import GetSeatUseCase
 from usecases.interfaces import DBRepositoryInterface
 
 container = Container()
@@ -37,3 +38,4 @@ container.register(GetGameUseCase, factory=GetGameUseCase)
 container.register(EndGameUseCase, factory=EndGameUseCase)
 container.register(AssignPlayerToSeatUseCase, factory=AssignPlayerToSeatUseCase)
 container.register(GetUserStatsUseCase, factory=GetUserStatsUseCase)
+container.register(GetSeatUseCase, factory=GetSeatUseCase)

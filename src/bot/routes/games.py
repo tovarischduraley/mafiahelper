@@ -11,12 +11,14 @@ from bot.filters import (
     GameSeatCallbackFactory,
     GameSeatPlayerCallbackFactory,
     GameSeatPlayerRoleCallbackFactory,
+    GetSeatCallbackFactory,
     SelectResultCallbackFactory,
 )
 from bot.utils import get_role_emoji
 from dependencies import container
 from usecases import AssignPlayerToSeatUseCase, CreateGameUseCase, EndGameUseCase, GetGameUseCase, GetUsersUseCase
 from usecases.errors import ValidationError
+from usecases.get_seat import GetSeatUseCase
 from usecases.schemas import GameSchema, PlayerSchema, UserSchema
 
 router = Router()
@@ -38,7 +40,7 @@ def _get_users_builder(users: list[UserSchema], seat_number: int, game_id: int) 
                 game_id=game_id,
                 seat_number=seat_number,
                 player_id=user.id,
-            )
+            ),
         )
     builder.adjust(2)
     return builder
@@ -176,35 +178,29 @@ async def select_player(callback_query: types.CallbackQuery, callback_data: Game
             InlineKeyboardButton(
                 text="⬅️",
                 callback_data=GameSeatCallbackFactory(
-                    game_id=callback_data.game_id,
-                    seat_number=callback_data.seat_number,
-                    page=callback_data.page - 1
-                ).pack()
+                    game_id=callback_data.game_id, seat_number=callback_data.seat_number, page=callback_data.page - 1
+                ).pack(),
             ),
         )
     else:
-        buttons.append(
-            InlineKeyboardButton(text=" ", callback_data="lorem-ipsum")
+        buttons.append(InlineKeyboardButton(text=" ", callback_data="lorem-ipsum"))
+    buttons.append(
+        InlineKeyboardButton(
+            text="Отмена",
+            callback_data=GameCallbackFactory(game_id=callback_data.game_id).pack(),
         )
-    buttons.append(InlineKeyboardButton(
-        text="Отмена",
-        callback_data=GameCallbackFactory(game_id=callback_data.game_id).pack(),
-    ))
+    )
     if users_count > len(users) + callback_data.page * USERS_PER_PAGE:
         buttons.append(
             InlineKeyboardButton(
                 text="➡️",
                 callback_data=GameSeatCallbackFactory(
-                    game_id=callback_data.game_id,
-                    seat_number=callback_data.seat_number,
-                    page=callback_data.page + 1
+                    game_id=callback_data.game_id, seat_number=callback_data.seat_number, page=callback_data.page + 1
                 ).pack(),
             )
         )
     else:
-        buttons.append(
-            InlineKeyboardButton(text=" ", callback_data="lorem-ipsum")
-        )
+        buttons.append(InlineKeyboardButton(text=" ", callback_data="lorem-ipsum"))
     if buttons:
         builder.row(*buttons, width=3)
 
@@ -227,4 +223,66 @@ async def get_game_info(callback_query: types.CallbackQuery, callback_data: Game
     await callback_query.message.edit_text(
         text=f"Игра {game.created_at.strftime('%d.%m.%Y %H:%m')}", reply_markup=_get_game_keyboard(game)
     )
+    await callback_query.answer()
+
+
+def _get_str_allowed_seats(allowed_seats: list[int]) -> str:
+    return ", ".join(map(str, allowed_seats))
+
+
+@router.message(F.text.lower() == "сгенерировать рассадку")
+async def get_seats_distribution(message: types.Message):
+    uc: GetSeatUseCase = container.resolve(GetSeatUseCase)
+    seat, allowed_seats = await uc.get_seat(available_seats=None)
+    kb = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(text="Заново", callback_data=GetSeatCallbackFactory(allowed_seats=None).pack()),
+                InlineKeyboardButton(
+                    text="Следующий",
+                    callback_data=GetSeatCallbackFactory(allowed_seats=_get_str_allowed_seats(allowed_seats)).pack(),
+                ),
+            ],
+        ]
+    )
+    await message.answer(
+        text=f"Выданные места:\n{seat}\n\nОставшиеся места:\n{_get_str_allowed_seats(allowed_seats=allowed_seats)}",
+        reply_markup=kb,
+    )
+
+
+def _get_distributed_seats_text(message_text: str, seat: int) -> str:
+    numbers_row = message_text.split("\n")[1]
+    return f"{numbers_row} -> {seat}"
+
+
+def _parse_allowed_seats(str_allowed_seats: str | None) -> list[int]:
+    return str_allowed_seats.split(", ")
+
+
+@router.callback_query(GetSeatCallbackFactory.filter())
+async def get_new_seat(callback_query: types.CallbackQuery, callback_data: GetSeatCallbackFactory):
+    uc: GetSeatUseCase = container.resolve(GetSeatUseCase)
+    parsed = _parse_allowed_seats(callback_data.allowed_seats) if callback_data.allowed_seats is not None else None
+    seat, allowed_seats = await uc.get_seat(available_seats=parsed)
+    builder = InlineKeyboardBuilder()
+    to_start = InlineKeyboardButton(text="Заново", callback_data=GetSeatCallbackFactory(allowed_seats=None).pack())
+    to_next = InlineKeyboardButton(
+        text="Следующий",
+        callback_data=GetSeatCallbackFactory(allowed_seats=_get_str_allowed_seats(allowed_seats)).pack(),
+    )
+    if callback_data.allowed_seats is None:
+        text = f"Выданные места:\n{seat}\n\nОставшиеся места:\n{_get_str_allowed_seats(allowed_seats=allowed_seats)}"
+        builder.row(to_start, to_next)
+    elif not allowed_seats:
+        text = f"Выданные места:\n{_get_distributed_seats_text(callback_query.message.text, seat=seat)}\n\n"
+        builder.row(to_start)
+    else:
+        text = (
+            f"Выданные места:\n"
+            f"{_get_distributed_seats_text(callback_query.message.text, seat=seat)}\n\n"
+            f"Оставшиеся места:\n{_get_str_allowed_seats(allowed_seats=allowed_seats)}"
+        )
+        builder.row(to_start, to_next)
+    await callback_query.message.edit_text(text=text, reply_markup=builder.as_markup())
     await callback_query.answer()

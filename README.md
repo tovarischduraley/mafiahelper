@@ -15,6 +15,7 @@ DB_HOST
 DB_USER
 DB_PASSWORD
 DB_NAME
+ADMIN_ID                # Telegram ID пользователя  
 ```
 
 Запуск осуществляется через `docker compose`

@@ -1,7 +1,4 @@
-from dotenv import find_dotenv, load_dotenv
 from pydantic_settings import BaseSettings
-
-load_dotenv(find_dotenv())
 
 
 class DBConfig(BaseSettings):
@@ -19,6 +16,7 @@ class DBConfig(BaseSettings):
 class Settings(BaseSettings):
     db_config: DBConfig = DBConfig()
     TELEGRAM_BOT_TOKEN: str
+    ADMIN_ID: int
 
 
 settings = Settings()

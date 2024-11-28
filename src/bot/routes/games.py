@@ -5,6 +5,7 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 import core
+from bot.auth import validate_admin
 from bot.filters import (
     EndGameCallbackFactory,
     GameCallbackFactory,
@@ -71,6 +72,7 @@ def _get_end_game_text(game: GameSchema) -> str:
 
 @router.callback_query(EndGameCallbackFactory.filter())
 async def end_game(callback_query: types.CallbackQuery, callback_data: EndGameCallbackFactory):
+    validate_admin(callback_query.from_user.id)
     end_uc: EndGameUseCase = container.resolve(EndGameUseCase)
     get_uc: GetGameUseCase = container.resolve(GetGameUseCase)
     try:
@@ -83,6 +85,7 @@ async def end_game(callback_query: types.CallbackQuery, callback_data: EndGameCa
 
 @router.callback_query(SelectResultCallbackFactory.filter())
 async def select_game_result(callback_query: types.CallbackQuery, callback_data: SelectResultCallbackFactory):
+    validate_admin(callback_query.from_user.id)
     builder = InlineKeyboardBuilder()
     builder.button(
         text="Победа города",
@@ -107,6 +110,7 @@ async def select_game_result(callback_query: types.CallbackQuery, callback_data:
 
 @router.message(F.text.lower() == "создать игру")
 async def create_game(message: types.Message):
+    validate_admin(message.from_user.id)
     uc: CreateGameUseCase = container.resolve(CreateGameUseCase)
     now = datetime.datetime.now()
     game = await uc.create_game_in_draft(created_at=now)
@@ -115,6 +119,7 @@ async def create_game(message: types.Message):
 
 @router.callback_query(GameSeatPlayerRoleCallbackFactory.filter())
 async def assign_player_to_seat(callback_query: types.CallbackQuery, callback_data: GameSeatPlayerRoleCallbackFactory):
+    validate_admin(callback_query.from_user.id)
     uc: AssignPlayerToSeatUseCase = container.resolve(AssignPlayerToSeatUseCase)
     game = await uc.assign_player_to_seat(
         game_id=callback_data.game_id,
@@ -131,6 +136,7 @@ async def assign_player_to_seat(callback_query: types.CallbackQuery, callback_da
 
 @router.callback_query(GameSeatPlayerCallbackFactory.filter())
 async def select_role(callback_query: types.CallbackQuery, callback_data: GameSeatPlayerCallbackFactory):
+    validate_admin(callback_query.from_user.id)
     builder = InlineKeyboardBuilder()
     (
         builder.button(
@@ -166,6 +172,7 @@ async def select_role(callback_query: types.CallbackQuery, callback_data: GameSe
 
 @router.callback_query(GameSeatCallbackFactory.filter())
 async def select_player(callback_query: types.CallbackQuery, callback_data: GameSeatCallbackFactory):
+    validate_admin(callback_query.from_user.id)
     uc: GetUsersUseCase = container.resolve(GetUsersUseCase)
     users = await uc.get_users(limit=USERS_PER_PAGE, offset=callback_data.page * USERS_PER_PAGE)
     users_count = await uc.get_users_count()
@@ -211,13 +218,9 @@ async def select_player(callback_query: types.CallbackQuery, callback_data: Game
     await callback_query.answer()
 
 
-@router.callback_query(F.data.lower() == "lorem-ipsum")
-async def lorem_ipsum(callback_query: types.CallbackQuery):
-    await callback_query.answer()
-
-
 @router.callback_query(GameCallbackFactory.filter())
 async def get_game_info(callback_query: types.CallbackQuery, callback_data: GameCallbackFactory):
+    validate_admin(callback_query.from_user.id)
     uc: GetGameUseCase = container.resolve(GetGameUseCase)
     game = await uc.get_game(callback_data.game_id)
     await callback_query.message.edit_text(
@@ -232,6 +235,7 @@ def _get_str_allowed_seats(allowed_seats: list[int]) -> str:
 
 @router.message(F.text.lower() == "сгенерировать рассадку")
 async def get_seats_distribution(message: types.Message):
+    validate_admin(message.from_user.id)
     uc: GetSeatUseCase = container.resolve(GetSeatUseCase)
     seat, allowed_seats = await uc.get_seat(available_seats=None)
     kb = InlineKeyboardMarkup(
@@ -262,6 +266,7 @@ def _parse_allowed_seats(str_allowed_seats: str | None) -> list[int]:
 
 @router.callback_query(GetSeatCallbackFactory.filter())
 async def get_new_seat(callback_query: types.CallbackQuery, callback_data: GetSeatCallbackFactory):
+    validate_admin(callback_query.from_user.id)
     uc: GetSeatUseCase = container.resolve(GetSeatUseCase)
     parsed = _parse_allowed_seats(callback_data.allowed_seats) if callback_data.allowed_seats is not None else None
     seat, allowed_seats = await uc.get_seat(available_seats=parsed)

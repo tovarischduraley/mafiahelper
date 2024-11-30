@@ -7,27 +7,27 @@ from core import Roles
 from tests.conftest import id_g, lost_game, won_game
 from tests.mocks import FakeDBRepository
 from usecases import GetUserStatsUseCase
-from usecases.schemas import GameSchema, PlayerSchema, UserSchema, UserStatsSchema
+from usecases.schemas import GameSchema, PlayerInGameSchema, PlayerSchema, PlayerStatsSchema
 
 test_user_id = next(id_g)
-test_user = UserSchema(
+test_user = PlayerSchema(
     id=test_user_id,
     fio="Test Stats User",
     nickname="Test Stats User",
 )
-civilian = PlayerSchema(id=test_user_id, fio=test_user.fio, nickname=test_user.nickname, role=Roles.CIVILIAN, number=1)
-mafia = PlayerSchema(id=test_user_id, fio=test_user.fio, nickname=test_user.nickname, role=Roles.MAFIA, number=1)
-don = PlayerSchema(id=test_user_id, fio=test_user.fio, nickname=test_user.nickname, role=Roles.DON, number=1)
-sheriff = PlayerSchema(id=test_user.id, fio=test_user.fio, nickname=test_user.nickname, role=Roles.SHERIFF, number=1)
+civilian = PlayerInGameSchema(id=test_user_id, fio=test_user.fio, nickname=test_user.nickname, role=Roles.CIVILIAN, number=1)
+mafia = PlayerInGameSchema(id=test_user_id, fio=test_user.fio, nickname=test_user.nickname, role=Roles.MAFIA, number=1)
+don = PlayerInGameSchema(id=test_user_id, fio=test_user.fio, nickname=test_user.nickname, role=Roles.DON, number=1)
+sheriff = PlayerInGameSchema(id=test_user.id, fio=test_user.fio, nickname=test_user.nickname, role=Roles.SHERIFF, number=1)
 
 
 @pytest.mark.parametrize(
     ("user", "games", "stats", "expectation"),
     (
         (
-            test_user,
-            [won_game(civilian), won_game(civilian)],
-            UserStatsSchema(
+                test_user,
+                [won_game(civilian), won_game(civilian)],
+                PlayerStatsSchema(
                 fio=test_user.fio,
                 nickname=test_user.nickname,
                 games_count_total=2,
@@ -39,12 +39,12 @@ sheriff = PlayerSchema(id=test_user.id, fio=test_user.fio, nickname=test_user.ni
                 win_percent_as_don=None,
                 win_percent_as_sheriff=None,
             ),
-            does_not_raise(),
+                does_not_raise(),
         ),
         (
-            test_user,
-            [won_game(mafia), won_game(civilian), lost_game(civilian), won_game(sheriff)],
-            UserStatsSchema(
+                test_user,
+                [won_game(mafia), won_game(civilian), lost_game(civilian), won_game(sheriff)],
+                PlayerStatsSchema(
                 fio=test_user.fio,
                 nickname=test_user.nickname,
                 games_count_total=4,
@@ -56,12 +56,12 @@ sheriff = PlayerSchema(id=test_user.id, fio=test_user.fio, nickname=test_user.ni
                 win_percent_as_don=None,
                 win_percent_as_sheriff=100,
             ),
-            does_not_raise(),
+                does_not_raise(),
         ),
         (
-            test_user,
-            [],
-            UserStatsSchema(
+                test_user,
+                [],
+                PlayerStatsSchema(
                 fio=test_user.fio,
                 nickname=test_user.nickname,
                 games_count_total=0,
@@ -73,15 +73,15 @@ sheriff = PlayerSchema(id=test_user.id, fio=test_user.fio, nickname=test_user.ni
                 win_percent_as_don=None,
                 win_percent_as_sheriff=None,
             ),
-            does_not_raise(),
+                does_not_raise(),
         ),
     ),
 )
 @pytest.mark.asyncio
 async def test_user_stats(
-    user: UserSchema, games: list[GameSchema], stats: UserStatsSchema, expectation: AbstractContextManager
+    user: PlayerSchema, games: list[GameSchema], stats: PlayerStatsSchema, expectation: AbstractContextManager
 ):
-    db = FakeDBRepository(games={game.id: game for game in games}, users={user.id: user})
+    db = FakeDBRepository(games={game.id: game for game in games}, players={user.id: user})
     uc = GetUserStatsUseCase(db)
     with expectation:
         result = await uc.get_user_stats(user_id=user.id)

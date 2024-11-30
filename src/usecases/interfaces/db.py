@@ -2,7 +2,8 @@ from abc import ABC, abstractmethod
 from typing import Self
 
 import core
-from usecases.schemas import CreateGameSchema, CreateUserSchema, GameSchema, UpdateGameSchema, UserSchema
+from usecases.schemas import CreateGameSchema, CreatePlayerSchema, GameSchema, UpdateGameSchema, PlayerSchema, \
+    UserSchema
 from usecases.schemas.games import RawGameSchema
 
 
@@ -14,26 +15,29 @@ class DBRepositoryInterface(ABC):
     async def __aexit__(self, exc_type, exc_val, exc_tb) -> None: ...
 
     @abstractmethod
-    async def create_user(self, user: CreateUserSchema) -> None: ...
+    async def create_player(self, player: CreatePlayerSchema) -> None: ...
 
     @abstractmethod
-    async def get_users(
+    async def create_user(self, user: UserSchema) -> None: ...
+
+    @abstractmethod
+    async def get_players(
         self,
         limit: int | None,
         offset: int | None,
-    ) -> list[UserSchema]: ...
+    ) -> list[PlayerSchema]: ...
 
     @abstractmethod
-    async def get_user_by_id(self, user_id: int) -> UserSchema: ...
+    async def get_player_by_id(self, player_id: int) -> PlayerSchema: ...
 
     @abstractmethod
-    async def add_player(self, game_id: int, user_id: int, seat_number: int, role: core.Roles) -> None: ...
+    async def add_player(self, game_id: int, player_id: int, seat_number: int, role: core.Roles) -> None: ...
 
     @abstractmethod
-    async def get_users_count(self) -> int: ...
+    async def get_players_count(self) -> int: ...
 
     @abstractmethod
-    async def remove_player(self, game_id: int, user_id: int) -> None: ...
+    async def remove_player_from_game(self, game_id: int, player_id: int) -> None: ...
 
     @abstractmethod
     async def remove_player_on_seat(self, game_id: int, seat_number: int) -> None: ...
@@ -49,11 +53,11 @@ class DBRepositoryInterface(ABC):
 
     @abstractmethod
     async def get_games(
-            self,
-            user_id: int | None = None,
-            seat_number: int | None = None,
-            role__in: list[core.Roles] | None = None,
-            result__in: list[core.GameResults] | None = None,
-            status: core.GameStatuses | None = None,
-            is_won: bool | None = None,
+        self,
+        player_id: int | None = None,
+        seat_number: int | None = None,
+        role__in: list[core.Roles] | None = None,
+        result__in: list[core.GameResults] | None = None,
+        status: core.GameStatuses | None = None,
+        is_won: bool | None = None,
     ) -> list[GameSchema]: ...

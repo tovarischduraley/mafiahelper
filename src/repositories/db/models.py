@@ -8,14 +8,14 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 class Base(DeclarativeBase): ...
 
 
-class UserGame(Base):
+class PlayerGame(Base):
     __tablename__ = "users_games"
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), primary_key=True)
     game_id: Mapped[int] = mapped_column(ForeignKey("games.id"), primary_key=True)
     role: Mapped[str] = mapped_column(nullable=False)
     number: Mapped[int] = mapped_column(nullable=False)
 
-    player: Mapped["User"] = relationship(back_populates="games")
+    player: Mapped["Player"] = relationship(back_populates="games")
     game: Mapped["Game"] = relationship(back_populates="players")
 
     def __repr__(self) -> str:
@@ -28,14 +28,14 @@ class UserGame(Base):
         )
 
 
-class User(Base):
-    __tablename__ = "users"
+class Player(Base):
+    __tablename__ = "players"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     fio: Mapped[Optional[str]] = mapped_column(nullable=True)
     nickname: Mapped[Optional[str]] = mapped_column(nullable=True)
 
-    games: Mapped[list["UserGame"]] = relationship(back_populates="player")
+    games: Mapped[list["PlayerGame"]] = relationship(back_populates="player")
 
     def __repr__(self) -> str:
         return f"<User id={self.id} nickname={self.nickname}>"
@@ -50,7 +50,19 @@ class Game(Base):
     comments: Mapped[str] = mapped_column(nullable=False, default="")
     created_at: Mapped[datetime.datetime] = mapped_column(nullable=False)
 
-    players: Mapped[list["UserGame"]] = relationship(back_populates="game")
+    players: Mapped[list["PlayerGame"]] = relationship(back_populates="game")
 
     def __repr__(self) -> str:
         return f"<Game id={self.id} created_at={self.created_at}>"
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    telegram_id: Mapped[int] = mapped_column(primary_key=True)
+    first_name: Mapped[str]
+    last_name: Mapped[str | None]
+    username: Mapped[str | None]
+
+    def __repr__(self) -> str:
+        return f"<Player id={self.telegram_id} username={self.username}>"

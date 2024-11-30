@@ -1,92 +1,92 @@
 import core
 from usecases.interfaces import DBRepositoryInterface
-from usecases.schemas import UserStatsSchema
+from usecases.schemas import PlayerStatsSchema
 
 
 class GetUserStatsUseCase:
     def __init__(self, db: DBRepositoryInterface) -> None:
         self._db = db
 
-    async def get_user_stats(self, user_id: int) -> UserStatsSchema:
+    async def get_user_stats(self, user_id: int) -> PlayerStatsSchema:
         async with self._db as db:
-            user = await db.get_user_by_id(user_id)
+            user = await db.get_player_by_id(user_id)
             total_games = await db.get_games(
-                user_id=user_id,
+                player_id=user_id,
                 status=core.GameStatuses.ENDED
             )
             total_won = await db.get_games(
-                user_id=user_id,
+                player_id=user_id,
                 status=core.GameStatuses.ENDED,
                 is_won=True
             )
             total_as_black = await db.get_games(
-                user_id=user_id,
+                player_id=user_id,
                 status=core.GameStatuses.ENDED,
                 role__in=[core.Roles.MAFIA, core.Roles.DON]
             )
             won_as_black = await db.get_games(
-                user_id=user_id,
+                player_id=user_id,
                 status=core.GameStatuses.ENDED,
                 is_won=True,
                 role__in=[core.Roles.MAFIA, core.Roles.DON],
             )
             total_as_red = await db.get_games(
-                user_id=user_id,
+                player_id=user_id,
                 status=core.GameStatuses.ENDED,
                 role__in=[core.Roles.CIVILIAN, core.Roles.SHERIFF],
             )
             won_as_red = await db.get_games(
-                user_id=user_id,
+                player_id=user_id,
                 status=core.GameStatuses.ENDED,
                 is_won=True,
                 role__in=[core.Roles.CIVILIAN, core.Roles.SHERIFF],
             )
             total_as_civilian = await db.get_games(
-                user_id=user_id,
+                player_id=user_id,
                 status=core.GameStatuses.ENDED,
                 role__in=[core.Roles.CIVILIAN],
             )
             won_as_civilian = await db.get_games(
-                user_id=user_id,
+                player_id=user_id,
                 status=core.GameStatuses.ENDED,
                 is_won=True,
                 role__in=[core.Roles.CIVILIAN],
             )
             total_as_sheriff = await db.get_games(
-                user_id=user_id,
+                player_id=user_id,
                 status=core.GameStatuses.ENDED,
                 role__in=[core.Roles.SHERIFF],
             )
             won_as_sheriff = await db.get_games(
-                user_id=user_id,
+                player_id=user_id,
                 status=core.GameStatuses.ENDED,
                 is_won=True,
                 role__in=[core.Roles.SHERIFF],
             )
             total_as_mafia = await db.get_games(
-                user_id=user_id,
+                player_id=user_id,
                 status=core.GameStatuses.ENDED,
                 role__in=[core.Roles.MAFIA],
             )
             won_as_mafia = await db.get_games(
-                user_id=user_id,
+                player_id=user_id,
                 status=core.GameStatuses.ENDED,
                 is_won=True,
                 role__in=[core.Roles.MAFIA],
             )
             total_as_don = await db.get_games(
-                user_id=user_id,
+                player_id=user_id,
                 status=core.GameStatuses.ENDED,
                 role__in=[core.Roles.DON],
             )
             won_as_don = await db.get_games(
-                user_id=user_id,
+                player_id=user_id,
                 status=core.GameStatuses.ENDED,
                 is_won=True,
                 role__in=[core.Roles.DON],
             )
 
-            return UserStatsSchema(
+            return PlayerStatsSchema(
                 fio=user.fio,
                 nickname=user.nickname,
                 games_count_total=len(total_games),

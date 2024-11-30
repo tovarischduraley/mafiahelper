@@ -1,7 +1,7 @@
 import core
 from usecases.errors import ValidationError
 from usecases.interfaces import DBRepositoryInterface
-from usecases.schemas import PlayerSchema, UpdateGameSchema
+from usecases.schemas import PlayerInGameSchema, UpdateGameSchema
 
 
 class EndGameUseCase:
@@ -9,12 +9,12 @@ class EndGameUseCase:
         self._db = db
 
     @staticmethod
-    def _validate_unique_players(players: list[PlayerSchema]) -> None:
+    def _validate_unique_players(players: list[PlayerInGameSchema]) -> None:
         if len(players) != len({p.id for p in players}):
             raise ValidationError("Some user is duplicated in game")
 
     @staticmethod
-    def _validate_roles_quantity(players: list[PlayerSchema]) -> None:
+    def _validate_roles_quantity(players: list[PlayerInGameSchema]) -> None:
         roles_in_game = {
             core.Roles.MAFIA: 0,
             core.Roles.DON: 0,
@@ -32,7 +32,7 @@ class EndGameUseCase:
             raise ValidationError(f"Roles distribution is not correct {roles_in_game=}")
 
     @staticmethod
-    def _validate_players_quantity(players: list[PlayerSchema]) -> None:
+    def _validate_players_quantity(players: list[PlayerInGameSchema]) -> None:
         if not (core.MIN_PLAYERS <= (players_quantity := len(players)) <= core.MAX_PLAYERS):
             raise ValidationError(f"Can't create game with {players_quantity} players")
 
@@ -42,7 +42,7 @@ class EndGameUseCase:
             raise ValidationError("Can't create game with no result")
 
     @staticmethod
-    def _validate_players_numbers(players: list[PlayerSchema]) -> None:
+    def _validate_players_numbers(players: list[PlayerInGameSchema]) -> None:
         if len({p.number for p in players}) != len(players):
             raise ValidationError("Players seat numbers are not valid")
 

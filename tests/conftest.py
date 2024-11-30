@@ -4,7 +4,7 @@ from collections.abc import Generator
 from typing import Callable
 
 from core import GameResults, GameStatuses, Roles, get_win_result_by_user_role
-from usecases.schemas import GameSchema, PlayerSchema, UserSchema
+from usecases.schemas import GameSchema, PlayerInGameSchema, PlayerSchema
 
 TEST_FIOS = [
     "John",
@@ -65,18 +65,18 @@ def _seat_gen(seats: list[int]):
 id_g = _id_gen()
 
 
-def valid_user() -> UserSchema:
+def valid_user() -> PlayerSchema:
     user_gen = _gen_user(fios=TEST_FIOS.copy(), nicknames=TEST_NICKNAMES.copy())
     fio, nickname = next(user_gen)
-    return UserSchema(id=next(id_g), fio=fio, nickname=nickname)
+    return PlayerSchema(id=next(id_g), fio=fio, nickname=nickname)
 
 
 def mafia_player(
     seat_generator: Generator[int, None, None],
     user_generator: Generator[tuple[str, str], None, None],
-) -> PlayerSchema:
+) -> PlayerInGameSchema:
     fio, nick = next(user_generator)
-    return PlayerSchema(
+    return PlayerInGameSchema(
         id=next(id_g),
         role=Roles.MAFIA,
         number=next(seat_generator),
@@ -88,9 +88,9 @@ def mafia_player(
 def civilian_player(
     seat_generator: Generator[int, None, None],
     user_generator: Generator[tuple[str, str], None, None],
-) -> PlayerSchema:
+) -> PlayerInGameSchema:
     fio, nick = next(user_generator)
-    return PlayerSchema(
+    return PlayerInGameSchema(
         id=next(id_g),
         role=Roles.CIVILIAN,
         number=next(seat_generator),
@@ -102,9 +102,9 @@ def civilian_player(
 def sheriff_player(
     seat_generator: Generator[int, None, None],
     user_generator: Generator[tuple[str, str], None, None],
-) -> PlayerSchema:
+) -> PlayerInGameSchema:
     fio, nick = next(user_generator)
-    return PlayerSchema(
+    return PlayerInGameSchema(
         id=next(id_g),
         role=Roles.SHERIFF,
         number=next(seat_generator),
@@ -116,9 +116,9 @@ def sheriff_player(
 def don_player(
     seat_generator: Generator[int, None, None],
     user_generator: Generator[tuple[str, str], None, None],
-) -> PlayerSchema:
+) -> PlayerInGameSchema:
     fio, nick = next(user_generator)
-    return PlayerSchema(
+    return PlayerInGameSchema(
         id=next(id_g),
         role=Roles.DON,
         number=next(seat_generator),
@@ -202,7 +202,7 @@ def game_with_nine_players() -> GameSchema:
     )
 
 
-def _get_other_players(role: Roles) -> list[PlayerSchema]:
+def _get_other_players(role: Roles) -> list[PlayerInGameSchema]:
     roles = {
         Roles.DON: 1,
         Roles.SHERIFF: 1,
@@ -238,7 +238,7 @@ def _get_other_players(role: Roles) -> list[PlayerSchema]:
     return players
 
 
-def ended_game_with_user(player: PlayerSchema, result: GameResults) -> GameSchema:
+def ended_game_with_user(player: PlayerInGameSchema, result: GameResults) -> GameSchema:
     other_players = _get_other_players(player.role)
     return GameSchema(
         id=next(id_g),
@@ -253,12 +253,12 @@ def ended_game_with_user(player: PlayerSchema, result: GameResults) -> GameSchem
     )
 
 
-def won_game(player: PlayerSchema) -> GameSchema:
+def won_game(player: PlayerInGameSchema) -> GameSchema:
     res = get_win_result_by_user_role(player.role)
     return ended_game_with_user(player, res)
 
 
-def lost_game(player: PlayerSchema) -> GameSchema:
+def lost_game(player: PlayerInGameSchema) -> GameSchema:
     if get_win_result_by_user_role(player.role) == GameResults.MAFIA_WON:
         return ended_game_with_user(player, GameResults.CIVILIANS_WON)
     return ended_game_with_user(player, GameResults.MAFIA_WON)

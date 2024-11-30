@@ -15,7 +15,7 @@ from tests.conftest import (
 from tests.mocks import FakeDBRepository
 from usecases import AssignPlayerToSeatUseCase, CreateGameUseCase, EndGameUseCase
 from usecases.errors import ValidationError
-from usecases.schemas import GameSchema, UserSchema
+from usecases.schemas import GameSchema, PlayerSchema
 
 
 @pytest.mark.asyncio
@@ -72,13 +72,13 @@ async def test_end_game(
 @pytest.mark.asyncio
 async def test_assign_player_to_seat(
     game: GameSchema,
-    user: UserSchema,
+    user: PlayerSchema,
     seat_number: int,
     role: Roles,
     expectation: AbstractContextManager,
 ):
     with expectation:
-        db = FakeDBRepository(users={user.id: user}, games={game.id: game})
+        db = FakeDBRepository(players={user.id: user}, games={game.id: game})
         uc = AssignPlayerToSeatUseCase(db=db)
         result_game = await uc.assign_player_to_seat(
             game_id=game.id,

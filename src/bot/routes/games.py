@@ -20,19 +20,19 @@ from dependencies import container
 from usecases import AssignPlayerToSeatUseCase, CreateGameUseCase, EndGameUseCase, GetGameUseCase, GetUsersUseCase
 from usecases.errors import ValidationError
 from usecases.get_seat import GetSeatUseCase
-from usecases.schemas import GameSchema, PlayerSchema, UserSchema
+from usecases.schemas import GameSchema, PlayerInGameSchema, PlayerSchema
 
 router = Router()
 USERS_PER_PAGE = 10
 
 
-def _get_player_by_number(number: int, players: list[PlayerSchema]) -> PlayerSchema | None:
+def _get_player_by_number(number: int, players: list[PlayerInGameSchema]) -> PlayerInGameSchema | None:
     if player := next(filter(lambda p: p.number == number, players), None):
         return player
     return None
 
 
-def _get_users_builder(users: list[UserSchema], seat_number: int, game_id: int) -> InlineKeyboardBuilder:
+def _get_users_builder(users: list[PlayerSchema], seat_number: int, game_id: int) -> InlineKeyboardBuilder:
     builder = InlineKeyboardBuilder()
     for user in users:
         builder.button(

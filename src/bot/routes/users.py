@@ -11,14 +11,14 @@ from bot.states import CreateUserStates
 from bot.utils import get_role_emoji, get_team_emoji
 from core import Roles, Teams
 from dependencies import container
-from usecases import CreateUserUseCase, GetUserStatsUseCase, GetUsersUseCase
-from usecases.schemas import CreateUserSchema, UserSchema, UserStatsSchema
+from usecases import CreatePlayerUseCase, GetUserStatsUseCase, GetUsersUseCase
+from usecases.schemas import CreatePlayerSchema, PlayerSchema, PlayerStatsSchema
 
 router = Router()
 USERS_PER_PAGE = 10
 
 
-def _get_users_builder(users: list[UserSchema], from_page: int) -> InlineKeyboardBuilder:
+def _get_users_builder(users: list[PlayerSchema], from_page: int) -> InlineKeyboardBuilder:
     builder = InlineKeyboardBuilder()
     for user in users:
         builder.button(
@@ -74,7 +74,7 @@ async def get_current_page_of_users(callback_query: CallbackQuery, callback_data
     await callback_query.answer()
 
 
-def _get_user_stats_text(user: UserStatsSchema) -> str:
+def _get_user_stats_text(user: PlayerStatsSchema) -> str:
     games_count_total_text = f"{user.games_count_total}"
     win_percent_general_text = f"{user.win_percent_general}%" if user.win_percent_general is not None else "--"
     win_percent_black_team_text = f"{user.win_percent_black_team}%" if user.win_percent_black_team is not None else "--"
@@ -137,9 +137,9 @@ async def process_user_fio(message: types.Message, state: FSMContext):
 async def process_user_nickname(message: types.Message, state: FSMContext):
     validate_admin(message.from_user.id)
     await state.update_data(nickname=message.text)
-    uc: CreateUserUseCase = container.resolve(CreateUserUseCase)
+    uc: CreatePlayerUseCase = container.resolve(CreatePlayerUseCase)
     user_data = await state.get_data()
-    await uc.create_user(CreateUserSchema(**user_data))
+    await uc.create_player(CreatePlayerSchema(**user_data))
     await message.answer(
         text=f"Вы создали игрока!\n\nИмя: {user_data["fio"]}\nПсевдоним: {user_data["nickname"]}",
         reply_markup=keyboards.admin_kb,

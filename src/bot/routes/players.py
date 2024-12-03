@@ -11,7 +11,7 @@ from bot.states import CreateUserStates
 from bot.utils import get_role_emoji, get_team_emoji
 from core import Roles, Teams
 from dependencies import container
-from usecases import CreatePlayerUseCase, GetUserStatsUseCase, GetUsersUseCase
+from usecases import CreatePlayerUseCase, GetPlayerStatsUseCase, GetPlayersUseCase
 from usecases.schemas import CreatePlayerSchema, PlayerSchema, PlayerStatsSchema
 
 router = Router()
@@ -31,9 +31,9 @@ def _get_users_builder(users: list[PlayerSchema], from_page: int) -> InlineKeybo
 
 @router.message(F.text.lower() == "список игроков")
 async def players_list(message: types.Message):
-    uc: GetUsersUseCase = container.resolve(GetUsersUseCase)
-    users = await uc.get_users(limit=USERS_PER_PAGE)
-    users_count = await uc.get_users_count()
+    uc: GetPlayersUseCase = container.resolve(GetPlayersUseCase)
+    users = await uc.get_players(limit=USERS_PER_PAGE)
+    users_count = await uc.get_players_count()
     builder = _get_users_builder(users, from_page=0)
     builder.adjust(2)
     if not users:
@@ -48,9 +48,9 @@ async def players_list(message: types.Message):
 
 @router.callback_query(UsersCurrentPageCallbackFactory.filter())
 async def get_current_page_of_users(callback_query: CallbackQuery, callback_data: UsersCurrentPageCallbackFactory):
-    uc: GetUsersUseCase = container.resolve(GetUsersUseCase)
-    users = await uc.get_users(limit=USERS_PER_PAGE, offset=callback_data.page * USERS_PER_PAGE)
-    users_count = await uc.get_users_count()
+    uc: GetPlayersUseCase = container.resolve(GetPlayersUseCase)
+    users = await uc.get_players(limit=USERS_PER_PAGE, offset=callback_data.page * USERS_PER_PAGE)
+    users_count = await uc.get_players_count()
     builder = _get_users_builder(users, callback_data.page)
     builder.adjust(2)
     buttons = []
@@ -101,8 +101,8 @@ def _get_user_stats_text(user: PlayerStatsSchema) -> str:
 
 @router.callback_query(UserCallbackFactory.filter())
 async def user_detail(callback_query: CallbackQuery, callback_data: UserCallbackFactory):
-    uc: GetUserStatsUseCase = container.resolve(GetUserStatsUseCase)
-    user_stats = await uc.get_user_stats(user_id=callback_data.user_id)
+    uc: GetPlayerStatsUseCase = container.resolve(GetPlayerStatsUseCase)
+    user_stats = await uc.get_player_stats(player_id=callback_data.user_id)
     kb = InlineKeyboardMarkup(
         inline_keyboard=[
             [

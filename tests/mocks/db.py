@@ -45,6 +45,9 @@ class FakeDBRepository(DBRepositoryInterface):
     async def create_user(self, user: UserSchema) -> None:
         self._users[user.telegram_id] = UserSchema(**user.model_dump())
 
+    async def get_users(self) -> None:
+        return list(self._users.values())
+
     async def get_players(
         self,
         limit: int | None,
@@ -131,4 +134,4 @@ class FakeDBRepository(DBRepositoryInterface):
     @staticmethod
     def _user_won(game: GameSchema, user_id: int) -> bool:
         user = next(filter(lambda p: p.id == user_id, game.players))
-        return core.get_win_result_by_user_role(user.role) == game.result
+        return core.get_win_result_by_player_role(user.role) == game.result

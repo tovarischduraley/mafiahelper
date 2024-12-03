@@ -10,7 +10,7 @@ from tests.conftest import (
     game_with_invalid_roles_distribution,
     game_with_nine_players,
     valid_game,
-    valid_user,
+    valid_player,
 )
 from tests.mocks import FakeDBRepository
 from usecases import AssignPlayerToSeatUseCase, CreateGameUseCase, EndGameUseCase
@@ -61,31 +61,31 @@ async def test_end_game(
 
 
 @pytest.mark.parametrize(
-    ("game", "user", "seat_number", "role", "expectation"),
+    ("game", "player", "seat_number", "role", "expectation"),
     (
-        (valid_game(), valid_user(), 1, Roles.MAFIA, does_not_raise()),
-        (valid_game(), valid_user(), "10", Roles.CIVILIAN, pytest.raises(ValidationError)),
-        (valid_game(), valid_user(), 11, Roles.CIVILIAN, pytest.raises(ValidationError)),
-        (valid_game(), valid_user(), 2.5, Roles.CIVILIAN, pytest.raises(ValidationError)),
+        (valid_game(), valid_player(), 1, Roles.MAFIA, does_not_raise()),
+        (valid_game(), valid_player(), "10", Roles.CIVILIAN, pytest.raises(ValidationError)),
+        (valid_game(), valid_player(), 11, Roles.CIVILIAN, pytest.raises(ValidationError)),
+        (valid_game(), valid_player(), 2.5, Roles.CIVILIAN, pytest.raises(ValidationError)),
     ),
 )
 @pytest.mark.asyncio
 async def test_assign_player_to_seat(
     game: GameSchema,
-    user: PlayerSchema,
+    player: PlayerSchema,
     seat_number: int,
     role: Roles,
     expectation: AbstractContextManager,
 ):
     with expectation:
-        db = FakeDBRepository(players={user.id: user}, games={game.id: game})
+        db = FakeDBRepository(players={player.id: player}, games={game.id: game})
         uc = AssignPlayerToSeatUseCase(db=db)
         result_game = await uc.assign_player_to_seat(
             game_id=game.id,
-            user_id=user.id,
+            player_id=player.id,
             seat_number=seat_number,
             role=role,
         )
         player_on_seat = next(filter(lambda p: p.number == seat_number, result_game.players))
-        assert user.id == player_on_seat.id
+        assert player.id == player_on_seat.id
         assert role == player_on_seat.role

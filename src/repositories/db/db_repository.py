@@ -12,8 +12,8 @@ from usecases.schemas import (
     CreateGameSchema,
     CreatePlayerSchema,
     GameSchema,
-    UpdateGameSchema,
     PlayerSchema,
+    UpdateGameSchema,
     UserSchema,
 )
 from usecases.schemas.games import PlayerInGameSchema, RawGameSchema
@@ -47,6 +47,13 @@ class DBRepository(DBRepositoryInterface):
         self._session.add(User(**user.model_dump()))
         await self._session.flush()
 
+    async def get_users(self) -> list[UserSchema]:
+        return [
+            UserSchema.model_validate(
+                u, from_attributes=True
+            ) for u in (await self._session.scalars(select(User))).all()
+        ]
+
     async def get_players(
         self,
         limit: int | None,
@@ -54,7 +61,7 @@ class DBRepository(DBRepositoryInterface):
     ) -> list[PlayerSchema]:
         query = (
             select(Player, func.coalesce(func.count(Game.id), 0))
-            .outerjoin(PlayerGame, Player.id == PlayerGame.user_id)
+            .outerjoin(PlayerGame, Player.id == PlayerGame.player_id)
             .outerjoin(Game, Game.id == PlayerGame.game_id)
             .filter(or_(Game.status == GameStatuses.ENDED, Game.id == None))  # noqa: E711
             .group_by(Player.id)
@@ -114,7 +121,7 @@ class DBRepository(DBRepositoryInterface):
             select(Game).join(PlayerGame).join(Player).options(joinedload(Game.players).joinedload(PlayerGame.player))
         )
         if player_id is not None:
-            query = query.where(PlayerGame.user_id == player_id)
+            query = query.where(PlayerGame.player_id == player_id)
         if role__in is not None:
             query = query.where(PlayerGame.role.in_(role__in))
         if result__in is not None:
@@ -125,7 +132,7 @@ class DBRepository(DBRepositoryInterface):
             query = query.where(Game.status == status)
         if is_won is not None:
             if player_id is None:
-                raise Exception("user_id must be defined to use filter 'is_won'")
+                raise Exception("player_id must be defined to use filter 'is_won'")
             query = query.where(
                 or_(
                     and_(
@@ -143,7 +150,7 @@ class DBRepository(DBRepositoryInterface):
 
     async def add_player(self, game_id: int, player_id: int, seat_number: int, role: core.Roles) -> None:
         player_in_game = PlayerGame(
-            user_id=player_id,
+            player_id=player_id,
             number=seat_number,
             role=role,
             game_id=game_id,
@@ -156,7 +163,7 @@ class DBRepository(DBRepositoryInterface):
         return await self._session.scalar(query)
 
     async def remove_player_from_game(self, game_id: int, player_id: int) -> None:
-        query = delete(PlayerGame).where(and_(PlayerGame.user_id == player_id, PlayerGame.game_id == game_id))
+        query = delete(PlayerGame).where(and_(PlayerGame.player_id == player_id, PlayerGame.game_id == game_id))
         await self._session.execute(query)
         await self._session.flush()
 
@@ -179,7 +186,7 @@ class DBRepository(DBRepositoryInterface):
         )
         self._session.add(game)
         await self._session.flush()
-        game_players = [PlayerGame(game_id=game.id, user_id=p.id, role=p.role, number=p.number) for p in data.players]
+        game_players = [PlayerGame(game_id=game.id, player_id=p.id, role=p.role, number=p.number) for p in data.players]
         self._session.add_all(game_players)
         await self._session.flush()
         return RawGameSchema(

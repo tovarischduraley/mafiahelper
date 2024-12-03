@@ -18,17 +18,17 @@ class AssignPlayerToSeatUseCase:
     async def assign_player_to_seat(
         self,
         game_id: int,
-        user_id: int,
+        player_id: int,
         seat_number: int,
         role: core.Roles,
     ) -> GameSchema:
         self._validate_seat_number(seat_number=seat_number)
         async with self._db as db:
-            await db.remove_player_from_game(game_id, user_id)
+            await db.remove_player_from_game(game_id, player_id)
             await db.remove_player_on_seat(game_id, seat_number=seat_number)
             await db.add_player(
                 game_id=game_id,
-                player_id=user_id,
+                player_id=player_id,
                 seat_number=seat_number,
                 role=role,
             )

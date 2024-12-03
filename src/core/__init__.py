@@ -7,5 +7,5 @@ from .games import (
     RolesQuantity,
     Teams,
     get_result_text,
-    get_win_result_by_user_role,
+    get_win_result_by_player_role,
 )

@@ -7,9 +7,9 @@ from usecases import (
     AssignPlayerToSeatUseCase,
     CreateGameUseCase,
     CreatePlayerUseCase,
-    GetUserStatsUseCase,
-    GetUsersUseCase,
-    SaveUserUseCase,
+    GetPlayerStatsUseCase,
+    GetPlayersUseCase,
+    UsersUseCase,
 )
 from usecases.end_game import EndGameUseCase
 from usecases.get_game import GetGameUseCase
@@ -33,11 +33,11 @@ session_factory = async_sessionmaker(autocommit=False, autoflush=False, bind=eng
 container.register(DBRepositoryInterface, factory=DBRepository, session_factory=session_factory)
 container.register(DBRepository, factory=DBRepository, session_factory=session_factory)
 container.register(CreatePlayerUseCase, factory=CreatePlayerUseCase)
-container.register(GetUsersUseCase, factory=GetUsersUseCase)
+container.register(GetPlayersUseCase, factory=GetPlayersUseCase)
 container.register(CreateGameUseCase, factory=CreateGameUseCase)
 container.register(GetGameUseCase, factory=GetGameUseCase)
 container.register(EndGameUseCase, factory=EndGameUseCase)
 container.register(AssignPlayerToSeatUseCase, factory=AssignPlayerToSeatUseCase)
-container.register(GetUserStatsUseCase, factory=GetUserStatsUseCase)
+container.register(GetPlayerStatsUseCase, factory=GetPlayerStatsUseCase)
 container.register(GetSeatUseCase, factory=GetSeatUseCase)
-container.register(SaveUserUseCase, factory=SaveUserUseCase)
+container.register(UsersUseCase, factory=UsersUseCase)

@@ -2,8 +2,14 @@ from abc import ABC, abstractmethod
 from typing import Self
 
 import core
-from usecases.schemas import CreateGameSchema, CreatePlayerSchema, GameSchema, UpdateGameSchema, PlayerSchema, \
-    UserSchema
+from usecases.schemas import (
+    CreateGameSchema,
+    CreatePlayerSchema,
+    GameSchema,
+    UpdateGameSchema,
+    PlayerSchema,
+    UserSchema,
+)
 from usecases.schemas.games import RawGameSchema
 
 
@@ -26,6 +32,9 @@ class DBRepositoryInterface(ABC):
         limit: int | None,
         offset: int | None,
     ) -> list[PlayerSchema]: ...
+
+    @abstractmethod
+    async def get_users(self) -> list[UserSchema]: ...
 
     @abstractmethod
     async def get_player_by_id(self, player_id: int) -> PlayerSchema: ...

@@ -17,7 +17,7 @@ from bot.filters import (
 )
 from bot.utils import get_role_emoji
 from dependencies import container
-from usecases import AssignPlayerToSeatUseCase, CreateGameUseCase, EndGameUseCase, GetGameUseCase, GetUsersUseCase
+from usecases import AssignPlayerToSeatUseCase, CreateGameUseCase, EndGameUseCase, GetGameUseCase, GetPlayersUseCase
 from usecases.errors import ValidationError
 from usecases.get_seat import GetSeatUseCase
 from usecases.schemas import GameSchema, PlayerInGameSchema, PlayerSchema
@@ -124,7 +124,7 @@ async def assign_player_to_seat(callback_query: types.CallbackQuery, callback_da
     game = await uc.assign_player_to_seat(
         game_id=callback_data.game_id,
         seat_number=callback_data.seat_number,
-        user_id=callback_data.player_id,
+        player_id=callback_data.player_id,
         role=callback_data.role,
     )
     await callback_query.message.edit_text(
@@ -173,9 +173,9 @@ async def select_role(callback_query: types.CallbackQuery, callback_data: GameSe
 @router.callback_query(GameSeatCallbackFactory.filter())
 async def select_player(callback_query: types.CallbackQuery, callback_data: GameSeatCallbackFactory):
     validate_admin(callback_query.from_user.id)
-    uc: GetUsersUseCase = container.resolve(GetUsersUseCase)
-    users = await uc.get_users(limit=USERS_PER_PAGE, offset=callback_data.page * USERS_PER_PAGE)
-    users_count = await uc.get_users_count()
+    uc: GetPlayersUseCase = container.resolve(GetPlayersUseCase)
+    users = await uc.get_players(limit=USERS_PER_PAGE, offset=callback_data.page * USERS_PER_PAGE)
+    users_count = await uc.get_players_count()
     builder = _get_users_builder(users, seat_number=callback_data.seat_number, game_id=callback_data.game_id)
     builder.adjust(2)
 
@@ -261,7 +261,7 @@ def _get_distributed_seats_text(message_text: str, seat: int) -> str:
 
 
 def _parse_allowed_seats(str_allowed_seats: str | None) -> list[int]:
-    return str_allowed_seats.split(", ")
+    return list(map(int, str_allowed_seats.split(", ")))
 
 
 @router.callback_query(GetSeatCallbackFactory.filter())

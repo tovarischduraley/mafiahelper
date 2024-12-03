@@ -1,5 +1,4 @@
-INSERT INTO users (fio, nickname) VALUES
-    ('Владимир', 'Лишний'),
+INSERT INTO players (fio, nickname) VALUES
     ('Владимир', 'Ребус'),
     ('Александра', 'Гюнтер'),
     ('Александра', 'Плиза'),

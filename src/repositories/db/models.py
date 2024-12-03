@@ -1,7 +1,7 @@
 import datetime
 from typing import Optional
 
-from sqlalchemy import ForeignKey
+from sqlalchemy import BigInteger, ForeignKey
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -9,8 +9,8 @@ class Base(DeclarativeBase): ...
 
 
 class PlayerGame(Base):
-    __tablename__ = "users_games"
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), primary_key=True)
+    __tablename__ = "players_games"
+    player_id: Mapped[int] = mapped_column(ForeignKey("players.id"), primary_key=True)
     game_id: Mapped[int] = mapped_column(ForeignKey("games.id"), primary_key=True)
     role: Mapped[str] = mapped_column(nullable=False)
     number: Mapped[int] = mapped_column(nullable=False)
@@ -20,8 +20,8 @@ class PlayerGame(Base):
 
     def __repr__(self) -> str:
         return (
-            f"<UserGame "
-            f"user_id={self.user_id} "
+            f"<PlayerGame "
+            f"player_id={self.player_id} "
             f"game_id={self.game_id} "
             f"role={self.role} "
             f"number={self.number} "
@@ -38,7 +38,7 @@ class Player(Base):
     games: Mapped[list["PlayerGame"]] = relationship(back_populates="player")
 
     def __repr__(self) -> str:
-        return f"<User id={self.id} nickname={self.nickname}>"
+        return f"<Player id={self.id} nickname={self.nickname}>"
 
 
 class Game(Base):
@@ -59,7 +59,7 @@ class Game(Base):
 class User(Base):
     __tablename__ = "users"
 
-    telegram_id: Mapped[int] = mapped_column(primary_key=True)
+    telegram_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     first_name: Mapped[str]
     last_name: Mapped[str | None]
     username: Mapped[str | None]

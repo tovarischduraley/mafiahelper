@@ -4,6 +4,6 @@ from .create_player import CreatePlayerUseCase
 from .end_game import EndGameUseCase
 from .get_game import GetGameUseCase
 from .get_seat import GetSeatUseCase
-from .get_user_stats import GetUserStatsUseCase
-from .get_users import GetUsersUseCase
-from .save_user import SaveUserUseCase
+from .get_player_stats import GetPlayerStatsUseCase
+from .get_players import GetPlayersUseCase
+from .users import UsersUseCase

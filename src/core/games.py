@@ -45,7 +45,7 @@ def get_result_text(result: GameResults) -> str:
             raise Exception(f"Game result <{result}> is invalid")
 
 
-def get_win_result_by_user_role(role: Roles) -> GameResults:
+def get_win_result_by_player_role(role: Roles) -> GameResults:
     match role:
         case Roles.CIVILIAN | Roles.SHERIFF:
             return GameResults.CIVILIANS_WON

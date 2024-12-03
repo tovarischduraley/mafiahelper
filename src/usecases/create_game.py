@@ -2,8 +2,7 @@ import datetime
 
 import core
 from usecases.interfaces import DBRepositoryInterface
-from usecases.schemas import CreateGameSchema
-from usecases.schemas.games import GameSchema
+from usecases.schemas import CreateGameSchema, GameSchema
 
 
 class CreateGameUseCase:
@@ -22,6 +21,3 @@ class CreateGameUseCase:
                 )
             )
             return await db.get_game_by_id(raw_game.id)
-
-
-

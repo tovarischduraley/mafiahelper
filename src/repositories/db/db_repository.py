@@ -5,7 +5,6 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.orm import joinedload
 
 import core
-from core import GameStatuses
 from usecases.errors import NotFoundError
 from usecases.interfaces import DBRepositoryInterface
 from usecases.schemas import (
@@ -59,14 +58,7 @@ class DBRepository(DBRepositoryInterface):
         limit: int | None,
         offset: int | None,
     ) -> list[PlayerSchema]:
-        query = (
-            select(Player, func.coalesce(func.count(Game.id), 0))
-            .outerjoin(PlayerGame, Player.id == PlayerGame.player_id)
-            .outerjoin(Game, Game.id == PlayerGame.game_id)
-            .filter(or_(Game.status == GameStatuses.ENDED, Game.id == None))  # noqa: E711
-            .group_by(Player.id)
-            .order_by(func.coalesce(func.count(Game.id), 0).desc())
-        )
+        query = select(Player)
         if offset is not None:
             query = query.offset(offset)
         if limit is not None:

@@ -112,7 +112,7 @@ async def select_game_result(callback_query: types.CallbackQuery, callback_data:
 async def create_game(message: types.Message):
     validate_admin(message.from_user.id)
     uc: CreateGameUseCase = container.resolve(CreateGameUseCase)
-    now = datetime.datetime.now(datetime.timezone.utc)
+    now = datetime.datetime.now()
     game = await uc.create_game_in_draft(created_at=now)
     await message.answer(text=f"Игра {now.strftime("%d.%m.%Y %H:%m")}", reply_markup=_get_game_keyboard(game))
 

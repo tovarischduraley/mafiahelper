@@ -22,7 +22,7 @@ from usecases.schemas import GameSchema, PlayerSchema
 async def test_create_game_in_draft():
     db = FakeDBRepository()
     uc = CreateGameUseCase(db=db)
-    now = datetime.datetime.now(datetime.timezone.utc)
+    now = datetime.datetime.now()
     users_count_before = len(db._games)
     created_game = await uc.create_game_in_draft(created_at=now)
     assert created_game == GameSchema(

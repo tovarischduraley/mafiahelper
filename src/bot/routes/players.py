@@ -6,8 +6,8 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from bot import keyboards
 from bot.auth import validate_admin
-from bot.filters import UserCallbackFactory, UsersCurrentPageCallbackFactory
-from bot.states import CreateUserStates
+from bot.filters import PlayerCallbackFactory, PlayersCurrentPageCallbackFactory
+from bot.states import CreatePlayerStates
 from bot.utils import get_role_emoji, get_team_emoji
 from core import Roles, Teams
 from dependencies import container
@@ -15,15 +15,15 @@ from usecases import CreatePlayerUseCase, GetPlayerStatsUseCase, GetPlayersUseCa
 from usecases.schemas import CreatePlayerSchema, PlayerSchema, PlayerStatsSchema
 
 router = Router()
-USERS_PER_PAGE = 10
+PLAYERS_PER_PAGE = 10
 
 
-def _get_users_builder(users: list[PlayerSchema], from_page: int) -> InlineKeyboardBuilder:
+def _get_players_builder(players: list[PlayerSchema], from_page: int) -> InlineKeyboardBuilder:
     builder = InlineKeyboardBuilder()
-    for user in users:
+    for player in players:
         builder.button(
-            text=f"{user.nickname}",
-            callback_data=UserCallbackFactory(user_id=user.id, users_page=from_page).pack(),
+            text=f"{player.nickname}",
+            callback_data=PlayerCallbackFactory(player_id=player.id, players_page=from_page).pack(),
         )
     builder.adjust(2)
     return builder
@@ -32,40 +32,40 @@ def _get_users_builder(users: list[PlayerSchema], from_page: int) -> InlineKeybo
 @router.message(F.text.lower() == "список игроков")
 async def players_list(message: types.Message):
     uc: GetPlayersUseCase = container.resolve(GetPlayersUseCase)
-    users = await uc.get_players(limit=USERS_PER_PAGE)
-    users_count = await uc.get_players_count()
-    builder = _get_users_builder(users, from_page=0)
+    players = await uc.get_players(limit=PLAYERS_PER_PAGE)
+    players_count = await uc.get_players_count()
+    builder = _get_players_builder(players, from_page=0)
     builder.adjust(2)
-    if not users:
+    if not players:
         await message.answer(text="Список игроков пуст.", reply_markup=builder.as_markup())
         return
-    if len(users) < users_count:
+    if len(players) < players_count:
         builder.row(
-            InlineKeyboardButton(text="➡️", callback_data=UsersCurrentPageCallbackFactory(page=1).pack()),
+            InlineKeyboardButton(text="➡️", callback_data=PlayersCurrentPageCallbackFactory(page=1).pack()),
         )
     await message.answer(text="Игроки:", reply_markup=builder.as_markup())
 
 
-@router.callback_query(UsersCurrentPageCallbackFactory.filter())
-async def get_current_page_of_users(callback_query: CallbackQuery, callback_data: UsersCurrentPageCallbackFactory):
+@router.callback_query(PlayersCurrentPageCallbackFactory.filter())
+async def get_current_page_of_players(callback_query: CallbackQuery, callback_data: PlayersCurrentPageCallbackFactory):
     uc: GetPlayersUseCase = container.resolve(GetPlayersUseCase)
-    users = await uc.get_players(limit=USERS_PER_PAGE, offset=callback_data.page * USERS_PER_PAGE)
-    users_count = await uc.get_players_count()
-    builder = _get_users_builder(users, callback_data.page)
+    players = await uc.get_players(limit=PLAYERS_PER_PAGE, offset=callback_data.page * PLAYERS_PER_PAGE)
+    players_count = await uc.get_players_count()
+    builder = _get_players_builder(players, callback_data.page)
     builder.adjust(2)
     buttons = []
     if callback_data.page > 0:
         buttons.append(
             InlineKeyboardButton(
                 text="⬅️",
-                callback_data=UsersCurrentPageCallbackFactory(page=callback_data.page - 1).pack(),
+                callback_data=PlayersCurrentPageCallbackFactory(page=callback_data.page - 1).pack(),
             ),
         )
-    if users_count > len(users) + callback_data.page * USERS_PER_PAGE:
+    if players_count > len(players) + callback_data.page * PLAYERS_PER_PAGE:
         buttons.append(
             InlineKeyboardButton(
                 text="➡️",
-                callback_data=UsersCurrentPageCallbackFactory(page=callback_data.page + 1).pack(),
+                callback_data=PlayersCurrentPageCallbackFactory(page=callback_data.page + 1).pack(),
             )
         )
     if buttons:
@@ -74,20 +74,24 @@ async def get_current_page_of_users(callback_query: CallbackQuery, callback_data
     await callback_query.answer()
 
 
-def _get_user_stats_text(user: PlayerStatsSchema) -> str:
-    games_count_total_text = f"{user.games_count_total}"
-    win_percent_general_text = f"{user.win_percent_general}%" if user.win_percent_general is not None else "--"
-    win_percent_black_team_text = f"{user.win_percent_black_team}%" if user.win_percent_black_team is not None else "--"
-    win_percent_red_team_text = f"{user.win_percent_red_team}%" if user.win_percent_red_team is not None else "--"
-    win_percent_as_civilian_text = (
-        f"{user.win_percent_as_civilian}%" if user.win_percent_as_civilian is not None else "--"
+def _get_playerr_stats_text(player: PlayerStatsSchema) -> str:
+    games_count_total_text = f"{player.games_count_total}"
+    win_percent_general_text = f"{player.win_percent_general}%" if player.win_percent_general is not None else "--"
+    win_percent_black_team_text = (
+        f"{player.win_percent_black_team}%" if player.win_percent_black_team is not None else "--"
     )
-    win_percent_as_mafia_text = f"{user.win_percent_as_mafia}%" if user.win_percent_as_mafia is not None else "--"
-    win_percent_as_don_text = f"{user.win_percent_as_don}%" if user.win_percent_as_don is not None else "--"
-    win_percent_as_sheriff_text = f"{user.win_percent_as_sheriff}%" if user.win_percent_as_sheriff is not None else "--"
+    win_percent_red_team_text = f"{player.win_percent_red_team}%" if player.win_percent_red_team is not None else "--"
+    win_percent_as_civilian_text = (
+        f"{player.win_percent_as_civilian}%" if player.win_percent_as_civilian is not None else "--"
+    )
+    win_percent_as_mafia_text = f"{player.win_percent_as_mafia}%" if player.win_percent_as_mafia is not None else "--"
+    win_percent_as_don_text = f"{player.win_percent_as_don}%" if player.win_percent_as_don is not None else "--"
+    win_percent_as_sheriff_text = (
+        f"{player.win_percent_as_sheriff}%" if player.win_percent_as_sheriff is not None else "--"
+    )
     return (
-        f"*{user.nickname}*\n"
-        f"{user.fio}\n\n"
+        f"*{player.nickname}*\n"
+        f"{player.fio}\n\n"
         f"Всего игр: {games_count_total_text}\n"
         f"Общий процент побед: {win_percent_general_text}\n\n"
         f"{get_team_emoji(Teams.BLACK)}\t Процент побед в черной команде: {win_percent_black_team_text}\n"
@@ -99,21 +103,22 @@ def _get_user_stats_text(user: PlayerStatsSchema) -> str:
     )
 
 
-@router.callback_query(UserCallbackFactory.filter())
-async def user_detail(callback_query: CallbackQuery, callback_data: UserCallbackFactory):
+@router.callback_query(PlayerCallbackFactory.filter())
+async def player_detail(callback_query: CallbackQuery, callback_data: PlayerCallbackFactory):
     uc: GetPlayerStatsUseCase = container.resolve(GetPlayerStatsUseCase)
-    user_stats = await uc.get_player_stats(player_id=callback_data.user_id)
+    player_stats = await uc.get_player_stats(player_id=callback_data.player_id)
     kb = InlineKeyboardMarkup(
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text="Назад", callback_data=UsersCurrentPageCallbackFactory(page=callback_data.users_page).pack()
+                    text="Назад",
+                    callback_data=PlayersCurrentPageCallbackFactory(page=callback_data.players_page).pack(),
                 )
             ],
         ]
     )
     await callback_query.message.edit_text(
-        text=_get_user_stats_text(user_stats), reply_markup=kb, parse_mode=ParseMode.MARKDOWN
+        text=_get_playerr_stats_text(player_stats), reply_markup=kb, parse_mode=ParseMode.MARKDOWN
     )
     await callback_query.answer()
 
@@ -122,26 +127,26 @@ async def user_detail(callback_query: CallbackQuery, callback_data: UserCallback
 async def create_player(message: types.Message, state: FSMContext):
     validate_admin(message.from_user.id)
     await message.answer("Введите ФИО игрока")
-    await state.set_state(CreateUserStates.waiting_fio)
+    await state.set_state(CreatePlayerStates.waiting_fio)
 
 
-@router.message(CreateUserStates.waiting_fio, F.text)
-async def process_user_fio(message: types.Message, state: FSMContext):
+@router.message(CreatePlayerStates.waiting_fio, F.text)
+async def process_player_fio(message: types.Message, state: FSMContext):
     validate_admin(message.from_user.id)
     await state.update_data(fio=message.text)
     await message.answer("Введите игровой псевдоним игрока")
-    await state.set_state(CreateUserStates.waiting_nickname)
+    await state.set_state(CreatePlayerStates.waiting_nickname)
 
 
-@router.message(CreateUserStates.waiting_nickname, F.text)
-async def process_user_nickname(message: types.Message, state: FSMContext):
+@router.message(CreatePlayerStates.waiting_nickname, F.text)
+async def process_player_nickname(message: types.Message, state: FSMContext):
     validate_admin(message.from_user.id)
     await state.update_data(nickname=message.text)
     uc: CreatePlayerUseCase = container.resolve(CreatePlayerUseCase)
-    user_data = await state.get_data()
-    await uc.create_player(CreatePlayerSchema(**user_data))
+    player_data = await state.get_data()
+    await uc.create_player(CreatePlayerSchema(**player_data))
     await message.answer(
-        text=f"Вы создали игрока!\n\nИмя: {user_data["fio"]}\nПсевдоним: {user_data["nickname"]}",
+        text=f"Вы создали игрока!\n\nИмя: {player_data["fio"]}\nПсевдоним: {player_data["nickname"]}",
         reply_markup=keyboards.admin_kb,
     )
     await state.clear()

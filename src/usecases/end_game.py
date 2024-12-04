@@ -11,7 +11,7 @@ class EndGameUseCase:
     @staticmethod
     def _validate_unique_players(players: list[PlayerInGameSchema]) -> None:
         if len(players) != len({p.id for p in players}):
-            raise ValidationError("Some user is duplicated in game")
+            raise ValidationError("Some player is duplicated in game")
 
     @staticmethod
     def _validate_roles_quantity(players: list[PlayerInGameSchema]) -> None:

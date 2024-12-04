@@ -15,19 +15,27 @@ test_player = PlayerSchema(
     fio="Test Stats User",
     nickname="Test Stats User",
 )
-civilian = PlayerInGameSchema(id=test_player_id, fio=test_player.fio, nickname=test_player.nickname, role=Roles.CIVILIAN, number=1)
-mafia = PlayerInGameSchema(id=test_player_id, fio=test_player.fio, nickname=test_player.nickname, role=Roles.MAFIA, number=1)
-don = PlayerInGameSchema(id=test_player_id, fio=test_player.fio, nickname=test_player.nickname, role=Roles.DON, number=1)
-sheriff = PlayerInGameSchema(id=test_player.id, fio=test_player.fio, nickname=test_player.nickname, role=Roles.SHERIFF, number=1)
+civilian = PlayerInGameSchema(
+    id=test_player_id, fio=test_player.fio, nickname=test_player.nickname, role=Roles.CIVILIAN, number=1
+)
+mafia = PlayerInGameSchema(
+    id=test_player_id, fio=test_player.fio, nickname=test_player.nickname, role=Roles.MAFIA, number=1
+)
+don = PlayerInGameSchema(
+    id=test_player_id, fio=test_player.fio, nickname=test_player.nickname, role=Roles.DON, number=1
+)
+sheriff = PlayerInGameSchema(
+    id=test_player.id, fio=test_player.fio, nickname=test_player.nickname, role=Roles.SHERIFF, number=1
+)
 
 
 @pytest.mark.parametrize(
     ("player", "games", "stats", "expectation"),
     (
         (
-                test_player,
-                [won_game(civilian), won_game(civilian)],
-                PlayerStatsSchema(
+            test_player,
+            [won_game(civilian), won_game(civilian)],
+            PlayerStatsSchema(
                 fio=test_player.fio,
                 nickname=test_player.nickname,
                 games_count_total=2,
@@ -39,12 +47,12 @@ sheriff = PlayerInGameSchema(id=test_player.id, fio=test_player.fio, nickname=te
                 win_percent_as_don=None,
                 win_percent_as_sheriff=None,
             ),
-                does_not_raise(),
+            does_not_raise(),
         ),
         (
-                test_player,
-                [won_game(mafia), won_game(civilian), lost_game(civilian), won_game(sheriff)],
-                PlayerStatsSchema(
+            test_player,
+            [won_game(mafia), won_game(civilian), lost_game(civilian), won_game(sheriff)],
+            PlayerStatsSchema(
                 fio=test_player.fio,
                 nickname=test_player.nickname,
                 games_count_total=4,
@@ -56,12 +64,12 @@ sheriff = PlayerInGameSchema(id=test_player.id, fio=test_player.fio, nickname=te
                 win_percent_as_don=None,
                 win_percent_as_sheriff=100,
             ),
-                does_not_raise(),
+            does_not_raise(),
         ),
         (
-                test_player,
-                [],
-                PlayerStatsSchema(
+            test_player,
+            [],
+            PlayerStatsSchema(
                 fio=test_player.fio,
                 nickname=test_player.nickname,
                 games_count_total=0,
@@ -73,7 +81,7 @@ sheriff = PlayerInGameSchema(id=test_player.id, fio=test_player.fio, nickname=te
                 win_percent_as_don=None,
                 win_percent_as_sheriff=None,
             ),
-                does_not_raise(),
+            does_not_raise(),
         ),
     ),
 )

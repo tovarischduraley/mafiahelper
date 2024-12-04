@@ -23,7 +23,7 @@ from usecases.get_seat import GetSeatUseCase
 from usecases.schemas import GameSchema, PlayerInGameSchema, PlayerSchema
 
 router = Router()
-USERS_PER_PAGE = 10
+PLAYERS_PER_PAGE = 10
 
 
 def _get_player_by_number(number: int, players: list[PlayerInGameSchema]) -> PlayerInGameSchema | None:
@@ -32,15 +32,15 @@ def _get_player_by_number(number: int, players: list[PlayerInGameSchema]) -> Pla
     return None
 
 
-def _get_users_builder(users: list[PlayerSchema], seat_number: int, game_id: int) -> InlineKeyboardBuilder:
+def _get_players_builder(players: list[PlayerSchema], seat_number: int, game_id: int) -> InlineKeyboardBuilder:
     builder = InlineKeyboardBuilder()
-    for user in users:
+    for player in players:
         builder.button(
-            text=f"{user.nickname}",
+            text=f"{player.nickname}",
             callback_data=GameSeatPlayerCallbackFactory(
                 game_id=game_id,
                 seat_number=seat_number,
-                player_id=user.id,
+                player_id=player.id,
             ),
         )
     builder.adjust(2)
@@ -174,9 +174,9 @@ async def select_role(callback_query: types.CallbackQuery, callback_data: GameSe
 async def select_player(callback_query: types.CallbackQuery, callback_data: GameSeatCallbackFactory):
     validate_admin(callback_query.from_user.id)
     uc: GetPlayersUseCase = container.resolve(GetPlayersUseCase)
-    users = await uc.get_players(limit=USERS_PER_PAGE, offset=callback_data.page * USERS_PER_PAGE)
-    users_count = await uc.get_players_count()
-    builder = _get_users_builder(users, seat_number=callback_data.seat_number, game_id=callback_data.game_id)
+    players = await uc.get_players(limit=PLAYERS_PER_PAGE, offset=callback_data.page * PLAYERS_PER_PAGE)
+    players_count = await uc.get_players_count()
+    builder = _get_players_builder(players, seat_number=callback_data.seat_number, game_id=callback_data.game_id)
     builder.adjust(2)
 
     buttons = []
@@ -197,7 +197,7 @@ async def select_player(callback_query: types.CallbackQuery, callback_data: Game
             callback_data=GameCallbackFactory(game_id=callback_data.game_id).pack(),
         )
     )
-    if users_count > len(users) + callback_data.page * USERS_PER_PAGE:
+    if players_count > len(players) + callback_data.page * PLAYERS_PER_PAGE:
         buttons.append(
             InlineKeyboardButton(
                 text="➡️",

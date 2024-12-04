@@ -8,9 +8,9 @@ from usecases.schemas import (
     CreatePlayerSchema,
     GameSchema,
     PlayerInGameSchema,
+    PlayerSchema,
     RawGameSchema,
     UpdateGameSchema,
-    PlayerSchema,
     UserSchema,
 )
 
@@ -45,7 +45,7 @@ class FakeDBRepository(DBRepositoryInterface):
     async def create_user(self, user: UserSchema) -> None:
         self._users[user.telegram_id] = UserSchema(**user.model_dump())
 
-    async def get_users(self) -> None:
+    async def get_users(self) -> list[UserSchema]:
         return list(self._users.values())
 
     async def get_players(

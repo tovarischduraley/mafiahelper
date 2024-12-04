@@ -66,16 +66,16 @@ id_g = _id_gen()
 
 
 def valid_player() -> PlayerSchema:
-    user_gen = _gen_player(fios=TEST_FIOS.copy(), nicknames=TEST_NICKNAMES.copy())
-    fio, nickname = next(user_gen)
+    player_gen = _gen_player(fios=TEST_FIOS.copy(), nicknames=TEST_NICKNAMES.copy())
+    fio, nickname = next(player_gen)
     return PlayerSchema(id=next(id_g), fio=fio, nickname=nickname)
 
 
 def mafia_player(
     seat_generator: Generator[int, None, None],
-    user_generator: Generator[tuple[str, str], None, None],
+    player_generator: Generator[tuple[str, str], None, None],
 ) -> PlayerInGameSchema:
-    fio, nick = next(user_generator)
+    fio, nick = next(player_generator)
     return PlayerInGameSchema(
         id=next(id_g),
         role=Roles.MAFIA,
@@ -87,9 +87,9 @@ def mafia_player(
 
 def civilian_player(
     seat_generator: Generator[int, None, None],
-    user_generator: Generator[tuple[str, str], None, None],
+    player_generator: Generator[tuple[str, str], None, None],
 ) -> PlayerInGameSchema:
-    fio, nick = next(user_generator)
+    fio, nick = next(player_generator)
     return PlayerInGameSchema(
         id=next(id_g),
         role=Roles.CIVILIAN,
@@ -101,9 +101,9 @@ def civilian_player(
 
 def sheriff_player(
     seat_generator: Generator[int, None, None],
-    user_generator: Generator[tuple[str, str], None, None],
+    player_generator: Generator[tuple[str, str], None, None],
 ) -> PlayerInGameSchema:
-    fio, nick = next(user_generator)
+    fio, nick = next(player_generator)
     return PlayerInGameSchema(
         id=next(id_g),
         role=Roles.SHERIFF,
@@ -115,9 +115,9 @@ def sheriff_player(
 
 def don_player(
     seat_generator: Generator[int, None, None],
-    user_generator: Generator[tuple[str, str], None, None],
+    player_generator: Generator[tuple[str, str], None, None],
 ) -> PlayerInGameSchema:
-    fio, nick = next(user_generator)
+    fio, nick = next(player_generator)
     return PlayerInGameSchema(
         id=next(id_g),
         role=Roles.DON,

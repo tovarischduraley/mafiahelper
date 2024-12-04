@@ -6,8 +6,8 @@ from usecases.schemas import (
     CreateGameSchema,
     CreatePlayerSchema,
     GameSchema,
-    UpdateGameSchema,
     PlayerSchema,
+    UpdateGameSchema,
     UserSchema,
 )
 from usecases.schemas.games import RawGameSchema

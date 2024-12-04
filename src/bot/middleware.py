@@ -21,14 +21,14 @@ class SaveUserMiddleware(BaseMiddleware):
                 last_name=user.last_name,
             )
             await users_uc.save_user(user_to_save)
-            # if user.id != settings.ADMIN_ID:
-            await event.bot.send_message(settings.ADMIN_ID, text=self._get_new_user_message(user_to_save))
+            if user.id != settings.ADMIN_ID:
+                await event.bot.send_message(settings.ADMIN_ID, text=self._get_new_user_message(user_to_save))
         return await handler(event, data)
 
     @staticmethod
     def _get_new_user_message(user: UserSchema) -> str:
         return (f"Новый пользователь бота:\n"
-                f"ID: {user.id}\n"
+                f"ID: {user.telegram_id}\n"
                 f"Имя: {user.first_name} {user.last_name or ""}"
                 f"\n\n{"" + user.username or ""}")
 

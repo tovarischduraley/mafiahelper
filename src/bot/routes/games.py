@@ -17,30 +17,30 @@ from bot.filters import (
 )
 from bot.utils import get_role_emoji
 from dependencies import container
-from usecases import AssignPlayerToSeatUseCase, CreateGameUseCase, EndGameUseCase, GetGameUseCase, GetUsersUseCase
+from usecases import AssignPlayerToSeatUseCase, CreateGameUseCase, EndGameUseCase, GetGameUseCase, GetPlayersUseCase
 from usecases.errors import ValidationError
 from usecases.get_seat import GetSeatUseCase
-from usecases.schemas import GameSchema, PlayerSchema, UserSchema
+from usecases.schemas import GameSchema, PlayerInGameSchema, PlayerSchema
 
 router = Router()
-USERS_PER_PAGE = 10
+PLAYERS_PER_PAGE = 10
 
 
-def _get_player_by_number(number: int, players: list[PlayerSchema]) -> PlayerSchema | None:
+def _get_player_by_number(number: int, players: list[PlayerInGameSchema]) -> PlayerInGameSchema | None:
     if player := next(filter(lambda p: p.number == number, players), None):
         return player
     return None
 
 
-def _get_users_builder(users: list[UserSchema], seat_number: int, game_id: int) -> InlineKeyboardBuilder:
+def _get_players_builder(players: list[PlayerSchema], seat_number: int, game_id: int) -> InlineKeyboardBuilder:
     builder = InlineKeyboardBuilder()
-    for user in users:
+    for player in players:
         builder.button(
-            text=f"{user.nickname}",
+            text=f"{player.nickname}",
             callback_data=GameSeatPlayerCallbackFactory(
                 game_id=game_id,
                 seat_number=seat_number,
-                player_id=user.id,
+                player_id=player.id,
             ),
         )
     builder.adjust(2)
@@ -112,7 +112,7 @@ async def select_game_result(callback_query: types.CallbackQuery, callback_data:
 async def create_game(message: types.Message):
     validate_admin(message.from_user.id)
     uc: CreateGameUseCase = container.resolve(CreateGameUseCase)
-    now = datetime.datetime.now(datetime.timezone.utc)
+    now = datetime.datetime.now()
     game = await uc.create_game_in_draft(created_at=now)
     await message.answer(text=f"Игра {now.strftime("%d.%m.%Y %H:%m")}", reply_markup=_get_game_keyboard(game))
 
@@ -124,7 +124,7 @@ async def assign_player_to_seat(callback_query: types.CallbackQuery, callback_da
     game = await uc.assign_player_to_seat(
         game_id=callback_data.game_id,
         seat_number=callback_data.seat_number,
-        user_id=callback_data.player_id,
+        player_id=callback_data.player_id,
         role=callback_data.role,
     )
     await callback_query.message.edit_text(
@@ -173,10 +173,10 @@ async def select_role(callback_query: types.CallbackQuery, callback_data: GameSe
 @router.callback_query(GameSeatCallbackFactory.filter())
 async def select_player(callback_query: types.CallbackQuery, callback_data: GameSeatCallbackFactory):
     validate_admin(callback_query.from_user.id)
-    uc: GetUsersUseCase = container.resolve(GetUsersUseCase)
-    users = await uc.get_users(limit=USERS_PER_PAGE, offset=callback_data.page * USERS_PER_PAGE)
-    users_count = await uc.get_users_count()
-    builder = _get_users_builder(users, seat_number=callback_data.seat_number, game_id=callback_data.game_id)
+    uc: GetPlayersUseCase = container.resolve(GetPlayersUseCase)
+    players = await uc.get_players(limit=PLAYERS_PER_PAGE, offset=callback_data.page * PLAYERS_PER_PAGE)
+    players_count = await uc.get_players_count()
+    builder = _get_players_builder(players, seat_number=callback_data.seat_number, game_id=callback_data.game_id)
     builder.adjust(2)
 
     buttons = []
@@ -197,7 +197,7 @@ async def select_player(callback_query: types.CallbackQuery, callback_data: Game
             callback_data=GameCallbackFactory(game_id=callback_data.game_id).pack(),
         )
     )
-    if users_count > len(users) + callback_data.page * USERS_PER_PAGE:
+    if players_count > len(players) + callback_data.page * PLAYERS_PER_PAGE:
         buttons.append(
             InlineKeyboardButton(
                 text="➡️",
@@ -261,7 +261,7 @@ def _get_distributed_seats_text(message_text: str, seat: int) -> str:
 
 
 def _parse_allowed_seats(str_allowed_seats: str | None) -> list[int]:
-    return str_allowed_seats.split(", ")
+    return list(map(int, str_allowed_seats.split(", ")))
 
 
 @router.callback_query(GetSeatCallbackFactory.filter())

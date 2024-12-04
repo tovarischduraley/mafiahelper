@@ -37,12 +37,12 @@ class EndGameCallbackFactory(CallbackData, prefix="end"):
     result: core.GameResults
 
 
-class UserCallbackFactory(CallbackData, prefix="user"):
-    user_id: int
-    users_page: int
+class PlayerCallbackFactory(CallbackData, prefix="player"):
+    player_id: int
+    players_page: int
 
 
-class UsersCurrentPageCallbackFactory(CallbackData, prefix="users"):
+class PlayersCurrentPageCallbackFactory(CallbackData, prefix="players"):
     page: int
 
 

@@ -5,8 +5,9 @@ from usecases.errors import NotFoundError
 from usecases.interfaces import DBRepositoryInterface
 from usecases.schemas import (
     CreateGameSchema,
-    CreateUserSchema,
+    CreatePlayerSchema,
     GameSchema,
+    PlayerInGameSchema,
     PlayerSchema,
     RawGameSchema,
     UpdateGameSchema,
@@ -17,11 +18,13 @@ from usecases.schemas import (
 class FakeDBRepository(DBRepositoryInterface):
     def __init__(
         self,
-        users: dict[int, UserSchema] | None = None,
+        players: dict[int, PlayerSchema] | None = None,
         games: dict[int, GameSchema] | None = None,
+        users: dict[int, UserSchema] | None = None,
     ) -> None:
-        self._users = users or {}
+        self._players = players or {}
         self._games = games or {}
+        self._users = users or {}
 
     async def __aenter__(self) -> Self:
         return self
@@ -35,16 +38,22 @@ class FakeDBRepository(DBRepositoryInterface):
 
     async def __aexit__(self, exc_type, exc_val, exc_tb) -> None: ...
 
-    async def create_user(self, user: CreateUserSchema) -> None:
-        id_ = self._get_next_id(self._users)
-        self._users[id_] = UserSchema(id=id_, **user.model_dump())
+    async def create_player(self, player: CreatePlayerSchema) -> None:
+        id_ = self._get_next_id(self._players)
+        self._players[id_] = PlayerSchema(id=id_, **player.model_dump())
 
-    async def get_users(
+    async def create_user(self, user: UserSchema) -> None:
+        self._users[user.telegram_id] = UserSchema(**user.model_dump())
+
+    async def get_users(self) -> list[UserSchema]:
+        return list(self._users.values())
+
+    async def get_players(
         self,
         limit: int | None,
         offset: int | None,
-    ) -> list[UserSchema]:
-        users = list(self._users.values())
+    ) -> list[PlayerSchema]:
+        users = list(self._players.values())
         match limit, offset:
             case None, None:
                 return users
@@ -55,14 +64,14 @@ class FakeDBRepository(DBRepositoryInterface):
             case _, _:
                 return users[offset : offset + limit]
 
-    async def get_user_by_id(self, user_id: int) -> UserSchema:
+    async def get_player_by_id(self, player_id: int) -> PlayerSchema:
         try:
-            return self._users[user_id]
+            return self._players[player_id]
         except KeyError as e:
-            raise NotFoundError(f"TEST user id={user_id} not found") from e
+            raise NotFoundError(f"TEST user id={player_id} not found") from e
 
-    async def get_users_count(self) -> int:
-        return len(self._users)
+    async def get_players_count(self) -> int:
+        return len(self._players)
 
     async def create_game(self, data: CreateGameSchema) -> RawGameSchema:
         id_ = self._get_next_id(self._games)
@@ -76,14 +85,14 @@ class FakeDBRepository(DBRepositoryInterface):
         except KeyError as e:
             raise NotFoundError(f"TEST game id={game_id} not found") from e
 
-    async def add_player(self, game_id: int, user_id: int, seat_number: int, role: core.Roles) -> None:
+    async def add_player(self, game_id: int, player_id: int, seat_number: int, role: core.Roles) -> None:
         game = self._games[game_id]
-        user = self._users[user_id]
-        game.players.append(PlayerSchema(number=seat_number, role=role, **user.model_dump()))
+        user = self._players[player_id]
+        game.players.append(PlayerInGameSchema(number=seat_number, role=role, **user.model_dump()))
 
-    async def remove_player(self, game_id: int, user_id: int) -> None:
+    async def remove_player_from_game(self, game_id: int, player_id: int) -> None:
         for p in self._games[game_id].players:
-            if p.id == user_id:
+            if p.id == player_id:
                 self._games[game_id].players.remove(p)
                 break
 
@@ -98,7 +107,7 @@ class FakeDBRepository(DBRepositoryInterface):
 
     async def get_games(
         self,
-        user_id: int | None = None,
+        player_id: int | None = None,
         seat_number: int | None = None,
         role__in: list[core.Roles] | None = None,
         result__in: list[core.GameResults] | None = None,
@@ -106,23 +115,23 @@ class FakeDBRepository(DBRepositoryInterface):
         is_won: bool | None = None,
     ) -> list[GameSchema]:
         games = self._games.values()
-        if user_id:
-            games = filter(lambda g: user_id in [p.id for p in g.players], games)
+        if player_id:
+            games = filter(lambda g: player_id in [p.id for p in g.players], games)
         if seat_number:
-            games = filter(lambda g: seat_number in [p.number for p in g.players if p.id == user_id], games)
+            games = filter(lambda g: seat_number in [p.number for p in g.players if p.id == player_id], games)
         if role__in:
-            games = filter(lambda g: set(role__in) & {p.role for p in g.players if p.id == user_id}, games)
+            games = filter(lambda g: set(role__in) & {p.role for p in g.players if p.id == player_id}, games)
         if result__in:
             games = filter(lambda g: g.result in result__in, games)
         if status:
             games = filter(lambda g: g.status == status, games)
         if is_won:
-            if not user_id:
+            if not player_id:
                 raise Exception("TEST no user_id in filters")
-            games = filter(lambda g: self._user_won(g, user_id), games)
+            games = filter(lambda g: self._user_won(g, player_id), games)
         return list(games)
 
     @staticmethod
     def _user_won(game: GameSchema, user_id: int) -> bool:
         user = next(filter(lambda p: p.id == user_id, game.players))
-        return core.get_win_result_by_user_role(user.role) == game.result
+        return core.get_win_result_by_player_role(user.role) == game.result

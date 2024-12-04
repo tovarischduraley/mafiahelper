@@ -5,13 +5,19 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.orm import joinedload
 
 import core
-from core import GameStatuses
 from usecases.errors import NotFoundError
 from usecases.interfaces import DBRepositoryInterface
-from usecases.schemas import CreateGameSchema, CreateUserSchema, GameSchema, UpdateGameSchema, UserSchema
-from usecases.schemas.games import PlayerSchema, RawGameSchema
+from usecases.schemas import (
+    CreateGameSchema,
+    CreatePlayerSchema,
+    GameSchema,
+    PlayerSchema,
+    UpdateGameSchema,
+    UserSchema,
+)
+from usecases.schemas.games import PlayerInGameSchema, RawGameSchema
 
-from .models import Game, User, UserGame
+from .models import Game, Player, PlayerGame, User
 
 
 class DBRepository(DBRepositoryInterface):
@@ -31,37 +37,41 @@ class DBRepository(DBRepositoryInterface):
         finally:
             await self._session.close()
 
-    async def create_user(self, user: CreateUserSchema) -> None:
-        new_user = User(fio=user.fio, nickname=user.nickname)
+    async def create_player(self, player: CreatePlayerSchema) -> None:
+        new_user = Player(fio=player.fio, nickname=player.nickname)
         self._session.add(new_user)
         await self._session.flush()
 
-    async def get_users(
+    async def create_user(self, user: UserSchema) -> None:
+        self._session.add(User(**user.model_dump()))
+        await self._session.flush()
+
+    async def get_users(self) -> list[UserSchema]:
+        return [
+            UserSchema.model_validate(
+                u, from_attributes=True
+            ) for u in (await self._session.scalars(select(User))).all()
+        ]
+
+    async def get_players(
         self,
         limit: int | None,
         offset: int | None,
-    ) -> list[UserSchema]:
-        query = (
-            select(User, func.coalesce(func.count(Game.id), 0))
-            .outerjoin(UserGame, User.id == UserGame.user_id)
-            .outerjoin(Game, Game.id == UserGame.game_id)
-            .filter(or_(Game.status == GameStatuses.ENDED, Game.id == None)) # noqa: E711
-            .group_by(User.id)
-            .order_by(func.coalesce(func.count(Game.id), 0).desc())
-        )
+    ) -> list[PlayerSchema]:
+        query = select(Player)
         if offset is not None:
             query = query.offset(offset)
         if limit is not None:
             query = query.limit(limit)
         raw_users = (await self._session.scalars(query)).all()
-        return [UserSchema.model_validate(u, from_attributes=True) for u in raw_users]
+        return [PlayerSchema.model_validate(u, from_attributes=True) for u in raw_users]
 
-    async def get_user_by_id(self, user_id: int) -> UserSchema:
-        query = select(User).where(User.id == user_id)
+    async def get_player_by_id(self, player_id: int) -> PlayerSchema:
+        query = select(Player).where(Player.id == player_id)
         user = await self._session.scalar(query)
         if not user:
-            raise NotFoundError(f"User id={user_id} not found")
-        return UserSchema.model_validate(user, from_attributes=True)
+            raise NotFoundError(f"User id={player_id} not found")
+        return PlayerSchema.model_validate(user, from_attributes=True)
 
     @staticmethod
     def _format_game(game: Game) -> GameSchema:
@@ -71,7 +81,7 @@ class DBRepository(DBRepositoryInterface):
             result=game.result,
             status=game.status,
             players=[
-                PlayerSchema(
+                PlayerInGameSchema(
                     id=p.player.id,
                     fio=p.player.fio,
                     nickname=p.player.nickname,
@@ -84,43 +94,45 @@ class DBRepository(DBRepositoryInterface):
         )
 
     async def get_game_by_id(self, game_id: int) -> GameSchema:
-        query = select(Game).where(Game.id == game_id).options(joinedload(Game.players).joinedload(UserGame.player))
+        query = select(Game).where(Game.id == game_id).options(joinedload(Game.players).joinedload(PlayerGame.player))
         game = (await self._session.scalars(query)).first()
         if not game:
             raise NotFoundError(f"Game id={game_id} not found")
         return self._format_game(game)
 
     async def get_games(
-            self,
-            user_id: int | None = None,
-            seat_number: int | None = None,
-            role__in: list[core.Roles] | None = None,
-            result__in: list[core.GameResults] | None = None,
-            status: core.GameStatuses | None = None,
-            is_won: bool | None = None,
+        self,
+        player_id: int | None = None,
+        seat_number: int | None = None,
+        role__in: list[core.Roles] | None = None,
+        result__in: list[core.GameResults] | None = None,
+        status: core.GameStatuses | None = None,
+        is_won: bool | None = None,
     ) -> list[GameSchema]:
-        query = select(Game).join(UserGame).join(User).options(joinedload(Game.players).joinedload(UserGame.player))
-        if user_id is not None:
-            query = query.where(UserGame.user_id == user_id)
+        query = (
+            select(Game).join(PlayerGame).join(Player).options(joinedload(Game.players).joinedload(PlayerGame.player))
+        )
+        if player_id is not None:
+            query = query.where(PlayerGame.player_id == player_id)
         if role__in is not None:
-            query = query.where(UserGame.role.in_(role__in))
+            query = query.where(PlayerGame.role.in_(role__in))
         if result__in is not None:
             query = query.where(Game.result.in_(result__in))
         if seat_number is not None:
-            query = query.where(UserGame.number == seat_number)
+            query = query.where(PlayerGame.number == seat_number)
         if status is not None:
             query = query.where(Game.status == status)
         if is_won is not None:
-            if user_id is None:
-                raise Exception("user_id must be defined to use filter 'is_won'")
+            if player_id is None:
+                raise Exception("player_id must be defined to use filter 'is_won'")
             query = query.where(
                 or_(
                     and_(
-                        UserGame.role.in_([core.Roles.SHERIFF, core.Roles.CIVILIAN]),
+                        PlayerGame.role.in_([core.Roles.SHERIFF, core.Roles.CIVILIAN]),
                         Game.result == core.GameResults.CIVILIANS_WON,
                     ),
                     and_(
-                        UserGame.role.in_([core.Roles.MAFIA, core.Roles.DON]),
+                        PlayerGame.role.in_([core.Roles.MAFIA, core.Roles.DON]),
                         Game.result == core.GameResults.MAFIA_WON,
                     ),
                 )
@@ -128,27 +140,27 @@ class DBRepository(DBRepositoryInterface):
         games = (await self._session.execute(query)).scalars().unique().all()
         return [self._format_game(g) for g in games]
 
-    async def add_player(self, game_id: int, user_id: int, seat_number: int, role: core.Roles) -> None:
-        player = UserGame(
-            user_id=user_id,
+    async def add_player(self, game_id: int, player_id: int, seat_number: int, role: core.Roles) -> None:
+        player_in_game = PlayerGame(
+            player_id=player_id,
             number=seat_number,
             role=role,
             game_id=game_id,
         )
-        self._session.add(player)
+        self._session.add(player_in_game)
         await self._session.flush()
 
-    async def get_users_count(self) -> int:
-        query = select(func.count(User.id))
+    async def get_players_count(self) -> int:
+        query = select(func.count(Player.id))
         return await self._session.scalar(query)
 
-    async def remove_player(self, game_id: int, user_id: int) -> None:
-        query = delete(UserGame).where(and_(UserGame.user_id == user_id, UserGame.game_id == game_id))
+    async def remove_player_from_game(self, game_id: int, player_id: int) -> None:
+        query = delete(PlayerGame).where(and_(PlayerGame.player_id == player_id, PlayerGame.game_id == game_id))
         await self._session.execute(query)
         await self._session.flush()
 
     async def remove_player_on_seat(self, game_id: int, seat_number: int) -> None:
-        query = delete(UserGame).where(and_(UserGame.number == seat_number, UserGame.game_id == game_id))
+        query = delete(PlayerGame).where(and_(PlayerGame.number == seat_number, PlayerGame.game_id == game_id))
         await self._session.execute(query)
         await self._session.flush()
 
@@ -166,7 +178,7 @@ class DBRepository(DBRepositoryInterface):
         )
         self._session.add(game)
         await self._session.flush()
-        game_players = [UserGame(game_id=game.id, user_id=p.id, role=p.role, number=p.number) for p in data.players]
+        game_players = [PlayerGame(game_id=game.id, player_id=p.id, role=p.role, number=p.number) for p in data.players]
         self._session.add_all(game_players)
         await self._session.flush()
         return RawGameSchema(

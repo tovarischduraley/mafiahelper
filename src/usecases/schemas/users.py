@@ -1,17 +1,25 @@
 from pydantic import BaseModel
 
 
-class CreateUserSchema(BaseModel):
+class CreatePlayerSchema(BaseModel):
     fio: str | None = None
     nickname: str | None = None
 
 
 class UserSchema(BaseModel):
+    telegram_id: int
+    first_name: str
+    last_name: str | None = None
+    username: str | None = None
+
+
+class PlayerSchema(BaseModel):
     id: int
     fio: str | None
     nickname: str | None
 
-class UserStatsSchema(BaseModel):
+
+class PlayerStatsSchema(BaseModel):
     fio: str | None
     nickname: str | None
     games_count_total: int
@@ -22,4 +30,3 @@ class UserStatsSchema(BaseModel):
     win_percent_as_mafia: float | None
     win_percent_as_don: float | None
     win_percent_as_sheriff: float | None
-

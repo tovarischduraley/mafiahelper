@@ -6,7 +6,8 @@ from aiogram.filters.command import Command
 
 from bot.auth import validate_admin
 from bot.keyboards import admin_kb, user_kb
-from bot.routes import games_router, users_router
+from bot.middleware import SaveUserMiddleware
+from bot.routes import games_router, players_router
 from config import settings
 from usecases.errors import ForbiddenError
 
@@ -33,7 +34,9 @@ async def cmd_start(message: types.Message):
 
 async def main():
     await bot.delete_webhook(drop_pending_updates=True)
-    dp.include_routers(games_router, users_router)
+    dp.message.middleware(SaveUserMiddleware())
+    dp.callback_query.middleware(SaveUserMiddleware())
+    dp.include_routers(games_router, players_router)
     await dp.start_polling(bot)
 
 

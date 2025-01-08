@@ -1,4 +1,4 @@
 #!/bin/sh
-alembic upgrade head
+uv run alembic upgrade head
 cd src
-python3 main.py
+uv run python3 main.py

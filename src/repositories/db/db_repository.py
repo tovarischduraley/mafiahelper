@@ -1,6 +1,6 @@
 from typing import Self
 
-from sqlalchemy import and_, delete, func, or_, select, update
+from sqlalchemy import Row, and_, case, delete, desc, func, or_, select, update
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.orm import joinedload
 
@@ -48,9 +48,8 @@ class DBRepository(DBRepositoryInterface):
 
     async def get_users(self) -> list[UserSchema]:
         return [
-            UserSchema.model_validate(
-                u, from_attributes=True
-            ) for u in (await self._session.scalars(select(User))).all()
+            UserSchema.model_validate(u, from_attributes=True)
+            for u in (await self._session.scalars(select(User))).all()
         ]
 
     async def get_players(
@@ -58,13 +57,28 @@ class DBRepository(DBRepositoryInterface):
         limit: int | None,
         offset: int | None,
     ) -> list[PlayerSchema]:
-        query = select(Player)
+        query = (
+            select(
+                Player.id,
+                Player.fio,
+                Player.nickname,
+                func.coalesce(func.sum(case((Game.status == "ended", 1), else_=0)), 0).label("ended_games_count"),
+            )
+            .outerjoin(PlayerGame, Player.id == PlayerGame.player_id)
+            .outerjoin(Game, PlayerGame.game_id == Game.id)
+            .group_by(Player.id, Player.nickname)
+            .order_by(desc("ended_games_count"))
+        )
         if offset is not None:
             query = query.offset(offset)
         if limit is not None:
             query = query.limit(limit)
-        raw_users = (await self._session.scalars(query)).all()
-        return [PlayerSchema.model_validate(u, from_attributes=True) for u in raw_users]
+        raw_players = (await self._session.execute(query)).all()
+        return [self._format_player(p) for p in raw_players]
+
+    @staticmethod
+    def _format_player(raw_player: Row) -> PlayerSchema:
+        return PlayerSchema(id=raw_player[0], fio=raw_player[1], nickname=raw_player[2])
 
     async def get_player_by_id(self, player_id: int) -> PlayerSchema:
         query = select(Player).where(Player.id == player_id)

@@ -31,4 +31,3 @@ class SaveUserMiddleware(BaseMiddleware):
                 f"ID: {user.telegram_id}\n"
                 f"Имя: {user.first_name} {user.last_name or ""}"
                 f"\n\n{"" + user.username or ""}")
-

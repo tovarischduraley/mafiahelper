@@ -49,7 +49,7 @@ def _get_players_builder(players: list[PlayerSchema], seat_number: int, game_id:
 
 def _get_game_keyboard(game: GameSchema) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    for number in range(1, 11):
+    for number in [5,6,4,7,3,8,2,9,1,10]:
         player = _get_player_by_number(number, game.players)
         builder.button(
             text=f"{number}. {player.nickname + " " + get_role_emoji(player.role) if player else "--"}",
@@ -138,29 +138,21 @@ async def assign_player_to_seat(callback_query: types.CallbackQuery, callback_da
 async def select_role(callback_query: types.CallbackQuery, callback_data: GameSeatPlayerCallbackFactory):
     validate_admin(callback_query.from_user.id)
     builder = InlineKeyboardBuilder()
-    (
-        builder.button(
-            text="Мафия",
-            callback_data=GameSeatPlayerRoleCallbackFactory(role=core.Roles.MAFIA, **callback_data.model_dump()),
-        ),
+    builder.button(
+        text="Мафия",
+        callback_data=GameSeatPlayerRoleCallbackFactory(role=core.Roles.MAFIA, **callback_data.model_dump()),
     )
-    (
-        builder.button(
-            text="Шериф",
-            callback_data=GameSeatPlayerRoleCallbackFactory(role=core.Roles.SHERIFF, **callback_data.model_dump()),
-        ),
+    builder.button(
+        text="Шериф",
+        callback_data=GameSeatPlayerRoleCallbackFactory(role=core.Roles.SHERIFF, **callback_data.model_dump()),
     )
-    (
-        builder.button(
-            text="Мирный житель",
-            callback_data=GameSeatPlayerRoleCallbackFactory(role=core.Roles.CIVILIAN, **callback_data.model_dump()),
-        ),
+    builder.button(
+        text="Мирный житель",
+        callback_data=GameSeatPlayerRoleCallbackFactory(role=core.Roles.CIVILIAN, **callback_data.model_dump()),
     )
-    (
-        builder.button(
-            text="Дон",
-            callback_data=GameSeatPlayerRoleCallbackFactory(role=core.Roles.DON, **callback_data.model_dump()),
-        ),
+    builder.button(
+        text="Дон",
+        callback_data=GameSeatPlayerRoleCallbackFactory(role=core.Roles.DON, **callback_data.model_dump()),
     )
     builder.adjust(1)
     await callback_query.message.edit_text(

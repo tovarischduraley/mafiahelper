@@ -32,6 +32,20 @@ class SelectResultCallbackFactory(CallbackData, prefix="result"):
     game_id: int
 
 
+class RegisterFirstKilledFactory(CallbackData, prefix="first_kill"):
+    game_id: int
+
+
+class AssignAsFirstKilledFactory(CallbackData, prefix="first_kill"):
+    game_id: int
+    first_killed_number: int
+
+
+class AddToBestMoveFactory(CallbackData, prefix="best_move"):
+    game_id: int
+    players_numbers_str: str
+
+
 class EndGameCallbackFactory(CallbackData, prefix="end"):
     game_id: int
     result: core.GameResults

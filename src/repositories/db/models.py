@@ -14,6 +14,8 @@ class PlayerGame(Base):
     game_id: Mapped[int] = mapped_column(ForeignKey("games.id"), primary_key=True)
     role: Mapped[str] = mapped_column(nullable=False)
     number: Mapped[int] = mapped_column(nullable=False)
+    in_best_move: Mapped[bool] = mapped_column(default=False)
+    is_first_killed: Mapped[bool] = mapped_column(default=False)
 
     player: Mapped["Player"] = relationship(back_populates="games")
     game: Mapped["Game"] = relationship(back_populates="players")

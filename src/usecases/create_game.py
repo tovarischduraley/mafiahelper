@@ -13,11 +13,13 @@ class CreateGameUseCase:
         async with self._db as db:
             raw_game = await db.create_game(
                 CreateGameSchema(
-                    players=[],
+                    players=set(),
                     status=core.GameStatuses.DRAFT,
                     result=None,
                     comments="",
                     created_at=created_at,
+                    first_killed=None,
+                    best_move=None,
                 )
             )
             return await db.get_game_by_id(raw_game.id)

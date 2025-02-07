@@ -4,16 +4,18 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from config import DBConfig
 from repositories.db import DBRepository
 from usecases import (
+    AddToBestMoveUseCase,
+    AssignAsFirstKilledUseCase,
     AssignPlayerToSeatUseCase,
     CreateGameUseCase,
     CreatePlayerUseCase,
+    EndGameUseCase,
+    GetGameUseCase,
     GetPlayerStatsUseCase,
     GetPlayersUseCase,
+    GetSeatUseCase,
     UsersUseCase,
 )
-from usecases.end_game import EndGameUseCase
-from usecases.get_game import GetGameUseCase
-from usecases.get_seat import GetSeatUseCase
 from usecases.interfaces import DBRepositoryInterface
 
 container = Container()
@@ -41,3 +43,5 @@ container.register(AssignPlayerToSeatUseCase, factory=AssignPlayerToSeatUseCase)
 container.register(GetPlayerStatsUseCase, factory=GetPlayerStatsUseCase)
 container.register(GetSeatUseCase, factory=GetSeatUseCase)
 container.register(UsersUseCase, factory=UsersUseCase)
+container.register(AssignAsFirstKilledUseCase, factory=AssignAsFirstKilledUseCase)
+container.register(AddToBestMoveUseCase, factory=AddToBestMoveUseCase)

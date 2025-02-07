@@ -28,6 +28,7 @@ class Roles(StrEnum):
     SHERIFF = "sheriff"
     DON = "don"
 
+
 class Teams(StrEnum):
     RED = "red"
     BLACK = "black"

@@ -1,5 +1,7 @@
 from pydantic import BaseModel
 
+from usecases.schemas.base import BaseEntity
+
 
 class CreatePlayerSchema(BaseModel):
     fio: str | None = None
@@ -13,8 +15,7 @@ class UserSchema(BaseModel):
     username: str | None = None
 
 
-class PlayerSchema(BaseModel):
-    id: int
+class PlayerSchema(BaseEntity):
     fio: str | None
     nickname: str | None
 

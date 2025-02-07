@@ -136,12 +136,14 @@ def valid_game() -> GameSchema:
         result=None,
         status=GameStatuses.DRAFT,
         created_at=datetime.datetime.now(),
-        players=[
+        best_move=None,
+        first_killed=None,
+        players={
             don_player(seats_generator, players_generator),
             sheriff_player(seats_generator, players_generator),
             *[mafia_player(seats_generator, players_generator) for _ in range(2)],
             *[civilian_player(seats_generator, players_generator) for _ in range(6)],
-        ],
+        },
     )
 
 
@@ -154,12 +156,14 @@ def game_with_invalid_roles_distribution() -> GameSchema:
         result=None,
         status=GameStatuses.DRAFT,
         created_at=datetime.datetime.now(),
-        players=[
+        first_killed=None,
+        best_move=None,
+        players={
             don_player(seats_generator, players_generator),
             sheriff_player(seats_generator, players_generator),
             *[mafia_player(seats_generator, players_generator) for _ in range(3)],
             *[civilian_player(seats_generator, players_generator) for _ in range(5)],
-        ],
+        },
     )
 
 
@@ -172,12 +176,14 @@ def game_with_invalid_players_quantity() -> GameSchema:
         result=None,
         status=GameStatuses.DRAFT,
         created_at=datetime.datetime.now(),
-        players=[
+        first_killed=None,
+        best_move=None,
+        players={
             don_player(seats_generator, players_generator),
             sheriff_player(seats_generator, players_generator),
             *[mafia_player(seats_generator, players_generator) for _ in range(3)],
             *[civilian_player(seats_generator, players_generator) for _ in range(2)],
-        ],
+        },
     )
 
 
@@ -193,12 +199,101 @@ def game_with_nine_players() -> GameSchema:
         result=None,
         status=GameStatuses.DRAFT,
         created_at=datetime.datetime.now(),
-        players=[
+        first_killed=None,
+        best_move=None,
+        players={
             don_player(seats_generator, players_generator),
             sheriff_player(seats_generator, players_generator),
             *[mafia_player(seats_generator, players_generator) for _ in range(2)],
             *[civilian_player(seats_generator, players_generator) for _ in range(5)],
-        ],
+        },
+    )
+
+
+def game_with_valid_best_move() -> GameSchema:
+    def _seq_seats_gen():
+        yield from range(1, 11)
+
+    seats_generator = _seq_seats_gen()
+    players_generator = _gen_player(fios=TEST_FIOS.copy(), nicknames=TEST_NICKNAMES.copy())
+    don = don_player(seats_generator, players_generator)
+    sheriff = sheriff_player(seats_generator, players_generator)
+    civilian1 = civilian_player(seats_generator, players_generator)
+    civilian2 = civilian_player(seats_generator, players_generator)
+    return GameSchema(
+        id=next(id_g),
+        comments="",
+        result=None,
+        status=GameStatuses.DRAFT,
+        created_at=datetime.datetime.now(),
+        first_killed=civilian1,
+        best_move={civilian2, sheriff, don},
+        players={
+            don,
+            sheriff,
+            civilian1,
+            civilian2,
+            *[mafia_player(seats_generator, players_generator) for _ in range(2)],
+            *[civilian_player(seats_generator, players_generator) for _ in range(4)],
+        },
+    )
+
+
+def game_with_invalid_best_move() -> GameSchema:
+    def _seq_seats_gen():
+        yield from range(1, 11)
+
+    seats_generator = _seq_seats_gen()
+    players_generator = _gen_player(fios=TEST_FIOS.copy(), nicknames=TEST_NICKNAMES.copy())
+    don = don_player(seats_generator, players_generator)
+    sheriff = sheriff_player(seats_generator, players_generator)
+    civilian1 = civilian_player(seats_generator, players_generator)
+    civilian2 = civilian_player(seats_generator, players_generator)
+    return GameSchema(
+        id=next(id_g),
+        comments="",
+        result=None,
+        status=GameStatuses.DRAFT,
+        created_at=datetime.datetime.now(),
+        first_killed=civilian1,
+        best_move={civilian2, civilian2, don},
+        players={
+            don,
+            sheriff,
+            civilian1,
+            civilian2,
+            *[mafia_player(seats_generator, players_generator) for _ in range(2)],
+            *[civilian_player(seats_generator, players_generator) for _ in range(4)],
+        },
+    )
+
+
+def game_with_best_move_and_no_first_killed() -> GameSchema:
+    def _seq_seats_gen():
+        yield from range(1, 11)
+
+    seats_generator = _seq_seats_gen()
+    players_generator = _gen_player(fios=TEST_FIOS.copy(), nicknames=TEST_NICKNAMES.copy())
+    don = don_player(seats_generator, players_generator)
+    sheriff = sheriff_player(seats_generator, players_generator)
+    civilian1 = civilian_player(seats_generator, players_generator)
+    civilian2 = civilian_player(seats_generator, players_generator)
+    return GameSchema(
+        id=next(id_g),
+        comments="",
+        result=None,
+        status=GameStatuses.DRAFT,
+        created_at=datetime.datetime.now(),
+        first_killed=None,
+        best_move={civilian2, civilian2, don},
+        players={
+            don,
+            sheriff,
+            civilian1,
+            civilian2,
+            *[mafia_player(seats_generator, players_generator) for _ in range(2)],
+            *[civilian_player(seats_generator, players_generator) for _ in range(4)],
+        },
     )
 
 
@@ -246,10 +341,12 @@ def ended_game_with_player(player: PlayerInGameSchema, result: GameResults) -> G
         result=result,
         status=GameStatuses.ENDED,
         created_at=datetime.datetime.now(),
-        players=[
+        first_killed=None,
+        best_move=None,
+        players={
             player,
             *other_players,
-        ],
+        },
     )
 
 

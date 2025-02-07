@@ -89,12 +89,13 @@ class DBRepository(DBRepositoryInterface):
 
     @staticmethod
     def _format_game(game: Game) -> GameSchema:
+        first_killed = next(filter(lambda p: p.is_first_killed, game.players), None)
         return GameSchema(
             id=game.id,
             comments=game.comments,
             result=game.result,
             status=game.status,
-            players=[
+            players={
                 PlayerInGameSchema(
                     id=p.player.id,
                     fio=p.player.fio,
@@ -103,8 +104,29 @@ class DBRepository(DBRepositoryInterface):
                     number=p.number,
                 )
                 for p in game.players
-            ],
+            },
             created_at=game.created_at,
+            best_move={
+                PlayerInGameSchema(
+                    id=p.player.id,
+                    fio=p.player.fio,
+                    nickname=p.player.nickname,
+                    role=p.role,
+                    number=p.number,
+                )
+                for p in game.players
+                if p.in_best_move
+            }
+            or None,
+            first_killed=PlayerInGameSchema(
+                id=first_killed.player.id,
+                fio=first_killed.player.fio,
+                nickname=first_killed.player.nickname,
+                role=first_killed.role,
+                number=first_killed.number,
+            )
+            if first_killed
+            else None,
         )
 
     async def get_game_by_id(self, game_id: int) -> GameSchema:
@@ -178,6 +200,44 @@ class DBRepository(DBRepositoryInterface):
         await self._session.execute(query)
         await self._session.flush()
 
+    async def get_player_by_number(self, game_id: int, player_number: int) -> PlayerSchema:
+        query = (
+            select(PlayerGame)
+            .where(and_(PlayerGame.number == player_number, PlayerGame.game_id == game_id))
+            .options(joinedload(PlayerGame.player))
+        )
+        player_game = await self._session.scalar(query)
+        if not player_game:
+            raise NotFoundError(f"Player number={player_number} not found in game id={game_id}")
+        return PlayerSchema.model_validate(player_game.player, from_attributes=True)
+
+    async def assign_player_as_first_killed(self, game_id: int, player_number: int) -> None:
+        query = (
+            update(PlayerGame)
+            .where(and_(PlayerGame.number == player_number, PlayerGame.game_id == game_id))
+            .values({"is_first_killed": True})
+        )
+        await self._session.execute(query)
+        await self._session.flush()
+
+    async def clear_game_first_killed_and_best_move(self, game_id: int) -> None:
+        query = (
+            update(PlayerGame)
+            .where(PlayerGame.game_id == game_id)
+            .values({"is_first_killed": False, "in_best_move": False})
+        )
+        await self._session.execute(query)
+        await self._session.flush()
+
+    async def set_game_best_move(self, players_numbers: set[int], game_id: int) -> None:
+        query = (
+            update(PlayerGame)
+            .where(and_(PlayerGame.number.in_(players_numbers), PlayerGame.game_id == game_id))
+            .values({"in_best_move": True})
+        )
+        await self._session.execute(query)
+        await self._session.flush()
+
     async def update_game(self, game_id: int, data: UpdateGameSchema) -> None:
         query = update(Game).where(Game.id == game_id).values(**data.model_dump(exclude_none=True))
         await self._session.execute(query)
@@ -192,8 +252,16 @@ class DBRepository(DBRepositoryInterface):
         )
         self._session.add(game)
         await self._session.flush()
-        game_players = [PlayerGame(game_id=game.id, player_id=p.id, role=p.role, number=p.number) for p in data.players]
-        self._session.add_all(game_players)
+        players = []
+        for p in data.players:
+            player_in_game = PlayerGame(game_id=game.id, player_id=p.id, role=p.role, number=p.number)
+            if player_in_game.player_id in {player.id for player in data.best_move}:
+                player_in_game.in_best_move = True
+            if player_in_game.player_id == data.first_killed.id:
+                player_in_game.is_first_killed = True
+            players.append(player_in_game)
+
+        self._session.add_all(players)
         await self._session.flush()
         return RawGameSchema(
             id=game.id,

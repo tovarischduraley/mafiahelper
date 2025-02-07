@@ -7,23 +7,36 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 import core
 from bot.auth import validate_admin
 from bot.filters import (
+    AddToBestMoveFactory,
+    AssignAsFirstKilledFactory,
     EndGameCallbackFactory,
     GameCallbackFactory,
     GameSeatCallbackFactory,
     GameSeatPlayerCallbackFactory,
     GameSeatPlayerRoleCallbackFactory,
     GetSeatCallbackFactory,
+    RegisterFirstKilledFactory,
     SelectResultCallbackFactory,
 )
 from bot.utils import get_role_emoji
+from core.games import GameStatuses, RolesQuantity
 from dependencies import container
-from usecases import AssignPlayerToSeatUseCase, CreateGameUseCase, EndGameUseCase, GetGameUseCase, GetPlayersUseCase
+from usecases import (
+    AddToBestMoveUseCase,
+    AssignAsFirstKilledUseCase,
+    AssignPlayerToSeatUseCase,
+    CreateGameUseCase,
+    EndGameUseCase,
+    GetGameUseCase,
+    GetPlayersUseCase,
+    GetSeatUseCase,
+)
 from usecases.errors import ValidationError
-from usecases.get_seat import GetSeatUseCase
 from usecases.schemas import GameSchema, PlayerInGameSchema, PlayerSchema
 
 router = Router()
 PLAYERS_PER_PAGE = 10
+ORDERED_PLAYERS_NUMBERS = [5, 6, 4, 7, 3, 8, 2, 9, 1, 10]
 
 
 def _get_player_by_number(number: int, players: list[PlayerInGameSchema]) -> PlayerInGameSchema | None:
@@ -47,38 +60,187 @@ def _get_players_builder(players: list[PlayerSchema], seat_number: int, game_id:
     return builder
 
 
-def _get_game_keyboard(game: GameSchema) -> InlineKeyboardMarkup:
+def _get_draft_game_keyboard(game: GameSchema) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    for number in [5,6,4,7,3,8,2,9,1,10]:
+    for number in ORDERED_PLAYERS_NUMBERS:
         player = _get_player_by_number(number, game.players)
         builder.button(
             text=f"{number}. {player.nickname + " " + get_role_emoji(player.role) if player else "--"}",
             callback_data=GameSeatCallbackFactory(game_id=game.id, seat_number=number, page=0),
         )
-    builder.button(text="Завершить игру", callback_data=SelectResultCallbackFactory(game_id=game.id))
     builder.adjust(2)
+    if game.first_killed is None and len(game.players) == core.MAX_PLAYERS:
+        builder.row(
+            InlineKeyboardButton(
+                text="Внести ПУ", callback_data=RegisterFirstKilledFactory(game_id=game.id).pack(), width=1
+            )
+        )
+    builder.row(
+        InlineKeyboardButton(
+            text="Завершить игру", callback_data=SelectResultCallbackFactory(game_id=game.id).pack(), width=1
+        )
+    )
     return builder.as_markup()
+
+
+def _get_draft_game_text(game: GameSchema) -> str:
+    text = f"Игра {game.created_at.strftime("%d.%m.%Y %H:%m")}\n"
+    if len(game.players) == core.MAX_PLAYERS:
+        text += _get_best_move_text(first_killed=game.first_killed, best_move=game.best_move)
+    return text
+
+
+def _get_game_text_and_keyboard(game: GameSchema) -> tuple[str, InlineKeyboardMarkup | None]:
+    match game.status:
+        case GameStatuses.ENDED:
+            text = _get_end_game_text(game=game)
+            keyboard = None
+        case GameStatuses.DRAFT:
+            text = _get_draft_game_text(game=game)
+            keyboard = _get_draft_game_keyboard(game=game)
+        case _:
+            raise Exception(f"Undefined game status '{game.status}'")
+    return text, keyboard
+
+
+def _get_best_move_text(
+    first_killed: PlayerInGameSchema | None,
+    best_move: set[PlayerInGameSchema] | None,
+) -> str:
+    best_move_text = (
+        ", ".join([f"{p.number}" for p in best_move]) + " (" + ", ".join([f"{p.nickname}" for p in best_move]) + ")"
+        if best_move
+        else "--"
+    )
+    return f"ПУ: {first_killed.nickname if first_killed else "--"}\nЛХ: {best_move_text}\n"
 
 
 def _get_end_game_text(game: GameSchema) -> str:
     sorted_players = sorted(game.players, key=lambda p: p.number)
-    players_text = "\n".join([f"{p.number} {p.nickname} {get_role_emoji(p.role)}" for p in sorted_players])
+    players_text = "\n".join([f"{p.number}. {p.nickname} {get_role_emoji(p.role)}" for p in sorted_players])
     return (
         f"Игра {game.created_at.strftime("%d.%m.%Y %H:%m")} завершена\n"
-        f"Результат: {core.get_result_text(game.result)}\n\n"
+        f"Результат: {core.get_result_text(game.result)}\n"
+        f"{_get_best_move_text(first_killed=game.first_killed, best_move=game.best_move)}\n"
         f"{players_text}"
     )
+
+
+def _get_first_killed_keyboard(game: GameSchema) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    for number in ORDERED_PLAYERS_NUMBERS:
+        player = _get_player_by_number(number, game.players)
+        builder.button(
+            text=f"{number}. {player.nickname + " " + get_role_emoji(player.role) if player else "--"}",
+            callback_data=AssignAsFirstKilledFactory(game_id=game.id, first_killed_number=number),
+        )
+    builder.adjust(2)
+    builder.row(
+        InlineKeyboardButton(
+            text="Отмена",
+            callback_data=GameCallbackFactory(game_id=game.id).pack(),
+        )
+    )
+    return builder.as_markup()
+
+
+def _get_best_move_keyboard(
+    game: GameSchema,
+    players_numbers_str: str = "",
+) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    for number in ORDERED_PLAYERS_NUMBERS:
+        player = _get_player_by_number(number, game.players)
+        added_numbers = set(players_numbers_str.split(","))
+        if number in added_numbers:
+            new_players_numbers_str = players_numbers_str
+        else:
+            new_players_numbers_str = f"{players_numbers_str},{number}" if players_numbers_str else str(number)
+        builder.button(
+            text=f"{number}. {player.nickname + " " + get_role_emoji(player.role) if player else "--"}",
+            callback_data=AddToBestMoveFactory(
+                game_id=game.id,
+                players_numbers_str=new_players_numbers_str,
+            ),
+        )
+    builder.button(
+        text="Назад",
+        callback_data=RegisterFirstKilledFactory(game_id=game.id),
+    )
+    builder.button(
+        text="Без ЛХ",
+        callback_data=GameCallbackFactory(game_id=game.id),
+    )
+    builder.adjust(2)
+    return builder.as_markup()
+
+
+@router.callback_query(RegisterFirstKilledFactory.filter())
+async def register_first_killed(callback_query: types.CallbackQuery, callback_data: RegisterFirstKilledFactory):
+    validate_admin(callback_query.from_user.id)
+    uc: GetGameUseCase = container.resolve(GetGameUseCase)
+    game = await uc.get_game(callback_data.game_id)
+    await callback_query.message.edit_text(
+        text="Выберите первого убиенного",
+        reply_markup=_get_first_killed_keyboard(game=game),
+    )
+    await callback_query.answer()
+
+
+@router.callback_query(AssignAsFirstKilledFactory.filter())
+async def assign_as_first_killed(callback_query: types.CallbackQuery, callback_data: AssignAsFirstKilledFactory):
+    validate_admin(callback_query.from_user.id)
+    assign_uc: AssignAsFirstKilledUseCase = container.resolve(AssignAsFirstKilledUseCase)
+    get_uc: GetGameUseCase = container.resolve(GetGameUseCase)
+    game = await get_uc.get_game(callback_data.game_id)
+    await assign_uc.assign_player_as_first_killed(
+        game_id=callback_data.game_id,
+        player_number=callback_data.first_killed_number,
+    )
+    await callback_query.message.edit_text(
+        text="Добавьте игроков в лучший ход",
+        reply_markup=_get_best_move_keyboard(game=game),
+    )
+    await callback_query.answer()
+
+
+@router.callback_query(AddToBestMoveFactory.filter())
+async def add_to_best_move(callback_query: types.CallbackQuery, callback_data: AddToBestMoveFactory):
+    validate_admin(callback_query.from_user.id)
+    players_numbers = set(callback_data.players_numbers_str.split(","))
+    get_uc: GetGameUseCase = container.resolve(GetGameUseCase)
+    game = await get_uc.get_game(callback_data.game_id)
+    if len(players_numbers) != RolesQuantity.MAFIA + RolesQuantity.DON:
+        await callback_query.message.edit_text(
+            text=f"Добавьте игроков в лучший ход\nДобавлены: {", ".join(sorted(players_numbers))}\n",
+            reply_markup=_get_best_move_keyboard(game=game, players_numbers_str=callback_data.players_numbers_str),
+        )
+    else:
+        uc: AddToBestMoveUseCase = container.resolve(AddToBestMoveUseCase)
+        await uc.add_players_to_best_move(
+            game_id=callback_data.game_id,
+            players_numbers=set(map(int, players_numbers)),
+        )
+        get_uc: GetGameUseCase = container.resolve(GetGameUseCase)
+        game = await get_uc.get_game(callback_data.game_id)
+        text, kb = _get_game_text_and_keyboard(game=game)
+        await callback_query.message.edit_text(
+            text=text,
+            reply_markup=kb,
+        )
+    await callback_query.answer()
 
 
 @router.callback_query(EndGameCallbackFactory.filter())
 async def end_game(callback_query: types.CallbackQuery, callback_data: EndGameCallbackFactory):
     validate_admin(callback_query.from_user.id)
     end_uc: EndGameUseCase = container.resolve(EndGameUseCase)
-    get_uc: GetGameUseCase = container.resolve(GetGameUseCase)
     try:
         await end_uc.end_game(game_id=callback_data.game_id, result=callback_data.result)
+        get_uc: GetGameUseCase = container.resolve(GetGameUseCase)
         game = await get_uc.get_game(callback_data.game_id)
-        await callback_query.message.edit_text(text=_get_end_game_text(game))
+        text, kb = _get_game_text_and_keyboard(game=game)
+        await callback_query.message.edit_text(text=text, reply_markup=kb)
     except ValidationError as e:
         await callback_query.answer(text=str(e))
 
@@ -114,22 +276,26 @@ async def create_game(message: types.Message):
     uc: CreateGameUseCase = container.resolve(CreateGameUseCase)
     now = datetime.datetime.now()
     game = await uc.create_game_in_draft(created_at=now)
-    await message.answer(text=f"Игра {now.strftime("%d.%m.%Y %H:%m")}", reply_markup=_get_game_keyboard(game))
+    text, kb = _get_game_text_and_keyboard(game=game)
+    await message.answer(text=text, reply_markup=kb)
 
 
 @router.callback_query(GameSeatPlayerRoleCallbackFactory.filter())
 async def assign_player_to_seat(callback_query: types.CallbackQuery, callback_data: GameSeatPlayerRoleCallbackFactory):
     validate_admin(callback_query.from_user.id)
     uc: AssignPlayerToSeatUseCase = container.resolve(AssignPlayerToSeatUseCase)
-    game = await uc.assign_player_to_seat(
+    await uc.assign_player_to_seat(
         game_id=callback_data.game_id,
         seat_number=callback_data.seat_number,
         player_id=callback_data.player_id,
         role=callback_data.role,
     )
+    get_uc: GetGameUseCase = container.resolve(GetGameUseCase)
+    game = await get_uc.get_game(callback_data.game_id)
+    text, kb = _get_game_text_and_keyboard(game=game)
     await callback_query.message.edit_text(
-        text=f"Игра {game.created_at.strftime("%d.%m.%Y %H:%m")}",
-        reply_markup=_get_game_keyboard(game),
+        text=text,
+        reply_markup=kb,
     )
     await callback_query.answer()
 
@@ -213,11 +379,10 @@ async def select_player(callback_query: types.CallbackQuery, callback_data: Game
 @router.callback_query(GameCallbackFactory.filter())
 async def get_game_info(callback_query: types.CallbackQuery, callback_data: GameCallbackFactory):
     validate_admin(callback_query.from_user.id)
-    uc: GetGameUseCase = container.resolve(GetGameUseCase)
-    game = await uc.get_game(callback_data.game_id)
-    await callback_query.message.edit_text(
-        text=f"Игра {game.created_at.strftime('%d.%m.%Y %H:%m')}", reply_markup=_get_game_keyboard(game)
-    )
+    get_uc: GetGameUseCase = container.resolve(GetGameUseCase)
+    game = await get_uc.get_game(callback_data.game_id)
+    text, kb = _get_game_text_and_keyboard(game=game)
+    await callback_query.message.edit_text(text=text, reply_markup=kb)
     await callback_query.answer()
 
 

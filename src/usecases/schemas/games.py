@@ -3,6 +3,7 @@ import datetime
 from pydantic import BaseModel, Field
 
 import core
+from usecases.schemas.base import BaseEntity
 from usecases.schemas.users import PlayerSchema
 
 
@@ -17,30 +18,32 @@ class UpdateGameSchema(BaseModel):
     status: core.GameStatuses | None = None
 
 
-class RawGameSchema(BaseModel):
+class RawGameSchema(BaseEntity):
     """Game with no nested objects"""
 
-    id: int
     comments: str
     result: core.GameResults | None
     status: core.GameStatuses
     created_at: datetime.datetime
 
 
-class GameSchema(BaseModel):
+class GameSchema(BaseEntity):
     """Fulfilled Game"""
 
-    id: int
     comments: str
     result: core.GameResults | None
     status: core.GameStatuses
-    players: list[PlayerInGameSchema]
+    players: set[PlayerInGameSchema]
     created_at: datetime.datetime
+    best_move: set[PlayerInGameSchema] | None
+    first_killed: PlayerInGameSchema | None
 
 
 class CreateGameSchema(BaseModel):
-    players: list[PlayerInGameSchema]
+    players: set[PlayerInGameSchema]
     status: core.GameStatuses
     result: core.GameResults | None
     comments: str
     created_at: datetime.datetime
+    best_move: set[PlayerInGameSchema] | None
+    first_killed: PlayerInGameSchema | None

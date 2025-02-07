@@ -87,14 +87,34 @@ class FakeDBRepository(DBRepositoryInterface):
 
     async def add_player(self, game_id: int, player_id: int, seat_number: int, role: core.Roles) -> None:
         game = self._games[game_id]
-        user = self._players[player_id]
-        game.players.append(PlayerInGameSchema(number=seat_number, role=role, **user.model_dump()))
+        player = self._players[player_id]
+        game.players.add(PlayerInGameSchema(number=seat_number, role=role, **player.model_dump()))
 
     async def remove_player_from_game(self, game_id: int, player_id: int) -> None:
         for p in self._games[game_id].players:
             if p.id == player_id:
                 self._games[game_id].players.remove(p)
                 break
+
+    async def set_game_best_move(self, game_id: int, players_numbers: set[int]) -> None:
+        game = self._games[game_id]
+        best_move = {p for p in game.players if p.number in players_numbers}
+        game.best_move = best_move
+
+    async def assign_player_as_first_killed(self, game_id: int, player_number: int) -> None:
+        game = self._games[game_id]
+        game.first_killed = next(filter(lambda p: p.number == player_number, game.players))
+
+    async def clear_game_first_killed_and_best_move(self, game_id: int) -> None:
+        game = self._games[game_id]
+        game.first_killed = None
+        game.best_move = None
+
+    async def get_player_by_number(self, game_id: int, player_number: int) -> PlayerInGameSchema:
+        try:
+            return next(filter(lambda p: p.number == player_number, self._games[game_id].players))
+        except StopIteration as e:
+            raise NotFoundError(f"TEST player number={player_number} not found in game id={game_id}") from e
 
     async def remove_player_on_seat(self, game_id: int, seat_number: int) -> None:
         for p in self._games[game_id].players:

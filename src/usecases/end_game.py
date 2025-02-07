@@ -1,4 +1,5 @@
 import core
+from core.games import RolesQuantity
 from usecases.errors import ValidationError
 from usecases.interfaces import DBRepositoryInterface
 from usecases.schemas import PlayerInGameSchema, UpdateGameSchema
@@ -9,12 +10,7 @@ class EndGameUseCase:
         self._db = db
 
     @staticmethod
-    def _validate_unique_players(players: list[PlayerInGameSchema]) -> None:
-        if len(players) != len({p.id for p in players}):
-            raise ValidationError("Some player is duplicated in game")
-
-    @staticmethod
-    def _validate_roles_quantity(players: list[PlayerInGameSchema]) -> None:
+    def _validate_roles_quantity(players: set[PlayerInGameSchema]) -> None:
         roles_in_game = {
             core.Roles.MAFIA: 0,
             core.Roles.DON: 0,
@@ -32,7 +28,7 @@ class EndGameUseCase:
             raise ValidationError(f"Roles distribution is not correct {roles_in_game=}")
 
     @staticmethod
-    def _validate_players_quantity(players: list[PlayerInGameSchema]) -> None:
+    def _validate_players_quantity(players: set[PlayerInGameSchema]) -> None:
         if not (core.MIN_PLAYERS <= (players_quantity := len(players)) <= core.MAX_PLAYERS):
             raise ValidationError(f"Can't create game with {players_quantity} players")
 
@@ -42,9 +38,19 @@ class EndGameUseCase:
             raise ValidationError("Can't create game with no result")
 
     @staticmethod
-    def _validate_players_numbers(players: list[PlayerInGameSchema]) -> None:
+    def _validate_players_numbers(players: set[PlayerInGameSchema]) -> None:
         if len({p.number for p in players}) != len(players):
             raise ValidationError("Players seat numbers are not valid")
+
+    @staticmethod
+    def _validate_best_move(
+        best_move: set[PlayerInGameSchema] | None,
+        first_killed: PlayerInGameSchema | None,
+    ) -> None:
+        if best_move is not None and first_killed is None:
+            raise ValidationError("First killed player must be specified to register 'best move'")
+        if best_move is not None and len(best_move) != (expected := RolesQuantity.MAFIA + RolesQuantity.DON):
+            raise ValidationError(f"Wrong best move players count. got {len(best_move)} != {expected} expected")
 
     async def end_game(self, game_id: int, result: core.GameResults) -> None:
         async with self._db as db:
@@ -55,5 +61,6 @@ class EndGameUseCase:
             game = await db.get_game_by_id(game_id)
             self._validate_game_result(game.result)
             self._validate_players_numbers(game.players)
+            self._validate_best_move(game.best_move, game.first_killed)
             self._validate_players_quantity(game.players)
             self._validate_roles_quantity(game.players)

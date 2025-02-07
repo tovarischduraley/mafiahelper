@@ -6,15 +6,19 @@ import pytest
 
 from core import GameResults, GameStatuses, Roles
 from tests.conftest import (
+    game_with_best_move_and_no_first_killed,
+    game_with_invalid_best_move,
     game_with_invalid_players_quantity,
     game_with_invalid_roles_distribution,
     game_with_nine_players,
+    game_with_valid_best_move,
     valid_game,
     valid_player,
 )
 from tests.mocks import FakeDBRepository
 from usecases import AssignPlayerToSeatUseCase, CreateGameUseCase, EndGameUseCase
 from usecases.errors import ValidationError
+from usecases.get_game import GetGameUseCase
 from usecases.schemas import GameSchema, PlayerSchema
 
 
@@ -30,10 +34,30 @@ async def test_create_game_in_draft():
         comments="",
         result=None,
         status=GameStatuses.DRAFT,
-        players=[],
+        players=set(),
         created_at=now,
+        first_killed=None,
+        best_move=None,
     )
     assert users_count_before + 1 == len(db._games)
+
+
+@pytest.mark.asyncio
+async def test_clear_best_move_and_first_killed():
+    game = game_with_valid_best_move()
+    db = FakeDBRepository(
+        games={game.id: game},
+        players={p.id: PlayerSchema(id=p.id, fio=p.fio, nickname=p.nickname) for p in game.players},
+    )
+    uc = AssignPlayerToSeatUseCase(db=db)
+    await uc.assign_player_to_seat(
+        game_id=game.id,
+        player_id=next(iter(game.players)).id,
+        seat_number=1,
+        role=Roles.MAFIA,
+    )
+    assert game.best_move is None
+    assert game.first_killed is None
 
 
 @pytest.mark.parametrize(
@@ -44,6 +68,9 @@ async def test_create_game_in_draft():
         (game_with_invalid_roles_distribution(), GameResults.DRAW, pytest.raises(ValidationError)),
         (game_with_invalid_players_quantity(), GameResults.CIVILIANS_WON, pytest.raises(ValidationError)),
         (game_with_nine_players(), GameResults.MAFIA_WON, does_not_raise()),
+        (game_with_best_move_and_no_first_killed(), GameResults.MAFIA_WON, pytest.raises(ValidationError)),
+        (game_with_valid_best_move(), GameResults.CIVILIANS_WON, does_not_raise()),
+        (game_with_invalid_best_move(), GameResults.CIVILIANS_WON, pytest.raises(ValidationError)),
     ),
 )
 @pytest.mark.asyncio
@@ -79,13 +106,15 @@ async def test_assign_player_to_seat(
 ):
     with expectation:
         db = FakeDBRepository(players={player.id: player}, games={game.id: game})
-        uc = AssignPlayerToSeatUseCase(db=db)
-        result_game = await uc.assign_player_to_seat(
+        assign_uc = AssignPlayerToSeatUseCase(db=db)
+        get_uc = GetGameUseCase(db=db)
+        await assign_uc.assign_player_to_seat(
             game_id=game.id,
             player_id=player.id,
             seat_number=seat_number,
             role=role,
         )
+        result_game = await get_uc.get_game(game_id=game.id)
         player_on_seat = next(filter(lambda p: p.number == seat_number, result_game.players))
         assert player.id == player_on_seat.id
         assert role == player_on_seat.role

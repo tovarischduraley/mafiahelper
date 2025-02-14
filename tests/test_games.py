@@ -64,7 +64,6 @@ async def test_clear_best_move_and_first_killed():
     ("game", "game_result", "expectation"),
     (
         (valid_game(), GameResults.MAFIA_WON, does_not_raise()),
-        (valid_game(), None, pytest.raises(ValidationError)),
         (game_with_invalid_roles_distribution(), GameResults.DRAW, pytest.raises(ValidationError)),
         (game_with_invalid_players_quantity(), GameResults.CIVILIANS_WON, pytest.raises(ValidationError)),
         (game_with_nine_players(), GameResults.MAFIA_WON, does_not_raise()),

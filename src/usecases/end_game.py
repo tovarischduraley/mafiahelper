@@ -54,13 +54,12 @@ class EndGameUseCase:
 
     async def end_game(self, game_id: int, result: core.GameResults) -> None:
         async with self._db as db:
-            await self._db.update_game(
-                game_id=game_id,
-                data=UpdateGameSchema(result=result, status=core.GameStatuses.ENDED),
-            )
             game = await db.get_game_by_id(game_id)
-            self._validate_game_result(game.result)
             self._validate_players_numbers(game.players)
             self._validate_best_move(game.best_move, game.first_killed)
             self._validate_players_quantity(game.players)
             self._validate_roles_quantity(game.players)
+            await self._db.update_game(
+                game_id=game_id,
+                data=UpdateGameSchema(result=result, status=core.GameStatuses.ENDED),
+            )

@@ -1,10 +1,12 @@
 from typing import Self
 
+import pytz
 from sqlalchemy import Row, and_, case, delete, desc, func, or_, select, update
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.orm import joinedload
 
 import core
+from core import GameStatuses
 from usecases.errors import NotFoundError
 from usecases.interfaces import DBRepositoryInterface
 from usecases.schemas import (
@@ -105,7 +107,7 @@ class DBRepository(DBRepositoryInterface):
                 )
                 for p in game.players
             },
-            created_at=game.created_at,
+            created_at=game.created_at.replace(tzinfo=pytz.timezone("Europe/Moscow")),
             best_move={
                 PlayerInGameSchema(
                     id=p.player.id,
@@ -138,6 +140,8 @@ class DBRepository(DBRepositoryInterface):
 
     async def get_games(
         self,
+        limit: int | None = None,
+        offset: int | None = None,
         player_id: int | None = None,
         seat_number: int | None = None,
         role__in: list[core.Roles] | None = None,
@@ -146,8 +150,12 @@ class DBRepository(DBRepositoryInterface):
         is_won: bool | None = None,
     ) -> list[GameSchema]:
         query = (
-            select(Game).join(PlayerGame).join(Player).options(joinedload(Game.players).joinedload(PlayerGame.player))
+            select(Game).options(joinedload(Game.players).joinedload(PlayerGame.player))
         )
+        if limit is not None:
+            query = query.limit(limit)
+        if offset is not None:
+            query = query.offset(offset)
         if player_id is not None:
             query = query.where(PlayerGame.player_id == player_id)
         if role__in is not None:
@@ -173,6 +181,7 @@ class DBRepository(DBRepositoryInterface):
                     ),
                 )
             )
+        query = query.order_by(Game.created_at.desc())
         games = (await self._session.execute(query)).scalars().unique().all()
         return [self._format_game(g) for g in games]
 
@@ -188,6 +197,10 @@ class DBRepository(DBRepositoryInterface):
 
     async def get_players_count(self) -> int:
         query = select(func.count(Player.id))
+        return await self._session.scalar(query)
+
+    async def get_ended_games_count(self) -> int:
+        query = select(func.count(Game.id)).where(Game.status == GameStatuses.ENDED)
         return await self._session.scalar(query)
 
     async def remove_player_from_game(self, game_id: int, player_id: int) -> None:

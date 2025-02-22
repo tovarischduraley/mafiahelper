@@ -10,7 +10,7 @@ from usecases import (
     CreateGameUseCase,
     CreatePlayerUseCase,
     EndGameUseCase,
-    GetGameUseCase,
+    GetGamesUseCase,
     GetPlayerStatsUseCase,
     GetPlayersUseCase,
     GetSeatUseCase,
@@ -37,7 +37,7 @@ container.register(DBRepository, factory=DBRepository, session_factory=session_f
 container.register(CreatePlayerUseCase, factory=CreatePlayerUseCase)
 container.register(GetPlayersUseCase, factory=GetPlayersUseCase)
 container.register(CreateGameUseCase, factory=CreateGameUseCase)
-container.register(GetGameUseCase, factory=GetGameUseCase)
+container.register(GetGamesUseCase, factory=GetGamesUseCase)
 container.register(EndGameUseCase, factory=EndGameUseCase)
 container.register(AssignPlayerToSeatUseCase, factory=AssignPlayerToSeatUseCase)
 container.register(GetPlayerStatsUseCase, factory=GetPlayerStatsUseCase)

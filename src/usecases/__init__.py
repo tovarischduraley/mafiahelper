@@ -4,7 +4,7 @@ from .assign_player_to_seat import AssignPlayerToSeatUseCase
 from .create_game import CreateGameUseCase
 from .create_player import CreatePlayerUseCase
 from .end_game import EndGameUseCase
-from .get_game import GetGameUseCase
+from .get_games import GetGamesUseCase
 from .get_player_stats import GetPlayerStatsUseCase
 from .get_players import GetPlayersUseCase
 from .get_seat import GetSeatUseCase

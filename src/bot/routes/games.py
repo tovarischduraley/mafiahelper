@@ -14,11 +14,13 @@ from bot.filters import (
     GameSeatCallbackFactory,
     GameSeatPlayerCallbackFactory,
     GameSeatPlayerRoleCallbackFactory,
+    GamesCurrentPageCallbackFactory,
+    GamesDetailPageCallbackFactory,
     GetSeatCallbackFactory,
     RegisterFirstKilledFactory,
     SelectResultCallbackFactory,
 )
-from bot.utils import get_role_emoji
+from bot.utils import get_role_emoji, get_team_emoji_by_game_result
 from core.games import GameStatuses, RolesQuantity
 from dependencies import container
 from usecases import (
@@ -27,7 +29,7 @@ from usecases import (
     AssignPlayerToSeatUseCase,
     CreateGameUseCase,
     EndGameUseCase,
-    GetGameUseCase,
+    GetGamesUseCase,
     GetPlayersUseCase,
     GetSeatUseCase,
 )
@@ -36,6 +38,7 @@ from usecases.schemas import GameSchema, PlayerInGameSchema, PlayerSchema
 
 router = Router()
 PLAYERS_PER_PAGE = 10
+GAMES_PER_PAGE = 5
 ORDERED_PLAYERS_NUMBERS = [5, 6, 4, 7, 3, 8, 2, 9, 1, 10]
 
 
@@ -55,6 +58,21 @@ def _get_players_builder(players: list[PlayerSchema], seat_number: int, game_id:
                 seat_number=seat_number,
                 player_id=player.id,
             ),
+        )
+    builder.adjust(2)
+    return builder
+
+
+def _get_games_builder(games: list[GameSchema], from_page: int) -> InlineKeyboardBuilder:
+    builder = InlineKeyboardBuilder()
+    for game in games:
+        builder.button(
+            text=(f"{get_team_emoji_by_game_result(game.result)} "
+                 f"{game.created_at.strftime("%d.%m.%Y %H:%M")}"),
+            callback_data=GamesDetailPageCallbackFactory(
+                game_id=game.id,
+                page=from_page,
+            ).pack(),
         )
     builder.adjust(2)
     return builder
@@ -84,7 +102,7 @@ def _get_draft_game_keyboard(game: GameSchema) -> InlineKeyboardMarkup:
 
 
 def _get_draft_game_text(game: GameSchema) -> str:
-    text = f"Игра {game.created_at.strftime("%d.%m.%Y %H:%m")}\n"
+    text = f"Игра {game.created_at.strftime("%d.%m.%Y %H:%M")}\n"
     if len(game.players) == core.MAX_PLAYERS:
         text += _get_best_move_text(first_killed=game.first_killed, best_move=game.best_move)
     return text
@@ -119,7 +137,7 @@ def _get_end_game_text(game: GameSchema) -> str:
     sorted_players = sorted(game.players, key=lambda p: p.number)
     players_text = "\n".join([f"{p.number}. {p.nickname} {get_role_emoji(p.role)}" for p in sorted_players])
     return (
-        f"Игра {game.created_at.strftime("%d.%m.%Y %H:%m")} завершена\n"
+        f"Игра {game.created_at.strftime("%d.%m.%Y %H:%M")} завершена\n"
         f"Результат: {core.get_result_text(game.result)}\n"
         f"{_get_best_move_text(first_killed=game.first_killed, best_move=game.best_move)}\n"
         f"{players_text}"
@@ -178,7 +196,7 @@ def _get_best_move_keyboard(
 @router.callback_query(RegisterFirstKilledFactory.filter())
 async def register_first_killed(callback_query: types.CallbackQuery, callback_data: RegisterFirstKilledFactory):
     validate_admin(callback_query.from_user.id)
-    uc: GetGameUseCase = container.resolve(GetGameUseCase)
+    uc: GetGamesUseCase = container.resolve(GetGamesUseCase)
     game = await uc.get_game(callback_data.game_id)
     await callback_query.message.edit_text(
         text="Выберите первого убиенного",
@@ -191,7 +209,7 @@ async def register_first_killed(callback_query: types.CallbackQuery, callback_da
 async def assign_as_first_killed(callback_query: types.CallbackQuery, callback_data: AssignAsFirstKilledFactory):
     validate_admin(callback_query.from_user.id)
     assign_uc: AssignAsFirstKilledUseCase = container.resolve(AssignAsFirstKilledUseCase)
-    get_uc: GetGameUseCase = container.resolve(GetGameUseCase)
+    get_uc: GetGamesUseCase = container.resolve(GetGamesUseCase)
     game = await get_uc.get_game(callback_data.game_id)
     await assign_uc.assign_player_as_first_killed(
         game_id=callback_data.game_id,
@@ -208,7 +226,7 @@ async def assign_as_first_killed(callback_query: types.CallbackQuery, callback_d
 async def add_to_best_move(callback_query: types.CallbackQuery, callback_data: AddToBestMoveFactory):
     validate_admin(callback_query.from_user.id)
     players_numbers = set(callback_data.players_numbers_str.split(","))
-    get_uc: GetGameUseCase = container.resolve(GetGameUseCase)
+    get_uc: GetGamesUseCase = container.resolve(GetGamesUseCase)
     game = await get_uc.get_game(callback_data.game_id)
     if len(players_numbers) != RolesQuantity.MAFIA + RolesQuantity.DON:
         await callback_query.message.edit_text(
@@ -221,7 +239,7 @@ async def add_to_best_move(callback_query: types.CallbackQuery, callback_data: A
             game_id=callback_data.game_id,
             players_numbers=set(map(int, players_numbers)),
         )
-        get_uc: GetGameUseCase = container.resolve(GetGameUseCase)
+        get_uc: GetGamesUseCase = container.resolve(GetGamesUseCase)
         game = await get_uc.get_game(callback_data.game_id)
         text, kb = _get_game_text_and_keyboard(game=game)
         await callback_query.message.edit_text(
@@ -237,7 +255,7 @@ async def end_game(callback_query: types.CallbackQuery, callback_data: EndGameCa
     end_uc: EndGameUseCase = container.resolve(EndGameUseCase)
     try:
         await end_uc.end_game(game_id=callback_data.game_id, result=callback_data.result)
-        get_uc: GetGameUseCase = container.resolve(GetGameUseCase)
+        get_uc: GetGamesUseCase = container.resolve(GetGamesUseCase)
         game = await get_uc.get_game(callback_data.game_id)
         text, kb = _get_game_text_and_keyboard(game=game)
         await callback_query.message.edit_text(text=text, reply_markup=kb)
@@ -270,6 +288,67 @@ async def select_game_result(callback_query: types.CallbackQuery, callback_data:
     await callback_query.answer()
 
 
+@router.message(F.text.lower() == "список игр")
+async def games_list(message: types.Message):
+    uc: GetGamesUseCase = container.resolve(GetGamesUseCase)
+    games, games_count = await uc.get_ended_games(limit=GAMES_PER_PAGE)
+    builder = _get_games_builder(games, from_page=0)
+    builder.adjust(1)
+    if not games:
+        await message.answer(text="Список игр пуст.", reply_markup=builder.as_markup())
+        return
+    if len(games) < games_count:
+        builder.row(
+            InlineKeyboardButton(text="➡️", callback_data=GamesCurrentPageCallbackFactory(page=1).pack()),
+        )
+    await message.answer(text="Игры:", reply_markup=builder.as_markup())
+
+
+@router.callback_query(GamesCurrentPageCallbackFactory.filter())
+async def get_current_page_of_games(
+    callback_query: types.CallbackQuery, callback_data: GamesCurrentPageCallbackFactory
+):
+    uc: GetGamesUseCase = container.resolve(GetGamesUseCase)
+    players, players_count = await uc.get_ended_games(
+        limit=GAMES_PER_PAGE,
+        offset=callback_data.page * GAMES_PER_PAGE,
+    )
+    builder = _get_games_builder(players, callback_data.page)
+    builder.adjust(1)
+    buttons = []
+    if callback_data.page > 0:
+        buttons.append(
+            InlineKeyboardButton(
+                text="⬅️",
+                callback_data=GamesCurrentPageCallbackFactory(page=callback_data.page - 1).pack(),
+            ),
+        )
+    if players_count > len(players) + callback_data.page * GAMES_PER_PAGE:
+        buttons.append(
+            InlineKeyboardButton(
+                text="➡️",
+                callback_data=GamesCurrentPageCallbackFactory(page=callback_data.page + 1).pack(),
+            )
+        )
+    if buttons:
+        builder.row(*buttons)
+    await callback_query.message.edit_text(text="Игры:", reply_markup=builder.as_markup())
+    await callback_query.answer()
+
+@router.callback_query(GamesDetailPageCallbackFactory.filter())
+async def get_game_detail(callback_query: types.CallbackQuery, callback_data: GamesDetailPageCallbackFactory):
+    get_uc: GetGamesUseCase = container.resolve(GetGamesUseCase)
+    game = await get_uc.get_game(callback_data.game_id)
+    text, _ = _get_game_text_and_keyboard(game=game)
+    builder = InlineKeyboardBuilder()
+    builder.button(
+        text="Назад",
+        callback_data=GamesCurrentPageCallbackFactory(page=callback_data.page).pack()
+    )
+    await callback_query.message.edit_text(text=text, reply_markup=builder.as_markup())
+    await callback_query.answer()
+
+
 @router.message(F.text.lower() == "создать игру")
 async def create_game(message: types.Message):
     validate_admin(message.from_user.id)
@@ -290,7 +369,7 @@ async def assign_player_to_seat(callback_query: types.CallbackQuery, callback_da
         player_id=callback_data.player_id,
         role=callback_data.role,
     )
-    get_uc: GetGameUseCase = container.resolve(GetGameUseCase)
+    get_uc: GetGamesUseCase = container.resolve(GetGamesUseCase)
     game = await get_uc.get_game(callback_data.game_id)
     text, kb = _get_game_text_and_keyboard(game=game)
     await callback_query.message.edit_text(
@@ -332,8 +411,7 @@ async def select_role(callback_query: types.CallbackQuery, callback_data: GameSe
 async def select_player(callback_query: types.CallbackQuery, callback_data: GameSeatCallbackFactory):
     validate_admin(callback_query.from_user.id)
     uc: GetPlayersUseCase = container.resolve(GetPlayersUseCase)
-    players = await uc.get_players(limit=PLAYERS_PER_PAGE, offset=callback_data.page * PLAYERS_PER_PAGE)
-    players_count = await uc.get_players_count()
+    players, players_count = await uc.get_players(limit=PLAYERS_PER_PAGE, offset=callback_data.page * PLAYERS_PER_PAGE)
     builder = _get_players_builder(players, seat_number=callback_data.seat_number, game_id=callback_data.game_id)
     builder.adjust(2)
 
@@ -379,7 +457,7 @@ async def select_player(callback_query: types.CallbackQuery, callback_data: Game
 @router.callback_query(GameCallbackFactory.filter())
 async def get_game_info(callback_query: types.CallbackQuery, callback_data: GameCallbackFactory):
     validate_admin(callback_query.from_user.id)
-    get_uc: GetGameUseCase = container.resolve(GetGameUseCase)
+    get_uc: GetGamesUseCase = container.resolve(GetGamesUseCase)
     game = await get_uc.get_game(callback_data.game_id)
     text, kb = _get_game_text_and_keyboard(game=game)
     await callback_query.message.edit_text(text=text, reply_markup=kb)

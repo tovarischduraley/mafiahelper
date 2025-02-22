@@ -12,6 +12,7 @@ dependencies = [
     "punq>=0.7.0",
     "pydantic>=2.9.2",
     "pydantic-settings>=2.6.1",
+    "pytz>=2025.1",
     "sqlalchemy>=2.0.36",
 ]
 

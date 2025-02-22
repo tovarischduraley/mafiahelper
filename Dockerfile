@@ -1,5 +1,5 @@
 FROM python:3.13-alpine
-
+ENV TZ="Europe/Moscow"
 ARG APP_DIR=/app
 WORKDIR ${APP_DIR}
 

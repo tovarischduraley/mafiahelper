@@ -10,19 +10,10 @@ class GetPlayerStatsUseCase:
     async def get_player_stats(self, player_id: int) -> PlayerStatsSchema:
         async with self._db as db:
             user = await db.get_player_by_id(player_id)
-            total_games = await db.get_games(
-                player_id=player_id,
-                status=core.GameStatuses.ENDED
-            )
-            total_won = await db.get_games(
-                player_id=player_id,
-                status=core.GameStatuses.ENDED,
-                is_won=True
-            )
+            total_games = await db.get_games(player_id=player_id, status=core.GameStatuses.ENDED)
+            total_won = await db.get_games(player_id=player_id, status=core.GameStatuses.ENDED, is_won=True)
             total_as_black = await db.get_games(
-                player_id=player_id,
-                status=core.GameStatuses.ENDED,
-                role__in=[core.Roles.MAFIA, core.Roles.DON]
+                player_id=player_id, status=core.GameStatuses.ENDED, role__in=[core.Roles.MAFIA, core.Roles.DON]
             )
             won_as_black = await db.get_games(
                 player_id=player_id,
@@ -98,6 +89,7 @@ class GetPlayerStatsUseCase:
                 win_percent_as_don=self._get_percent(piece=len(won_as_don), total=len(total_as_don)),
                 win_percent_as_sheriff=self._get_percent(piece=len(won_as_sheriff), total=len(total_as_sheriff)),
             )
+
     @staticmethod
     def _get_percent(piece: int, total: int) -> float | None:
         return round(piece / total * 100, 2) if total > 0 else None

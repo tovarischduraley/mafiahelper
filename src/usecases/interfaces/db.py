@@ -73,8 +73,13 @@ class DBRepositoryInterface(ABC):
     async def get_game_by_id(self, game_id: int) -> GameSchema: ...
 
     @abstractmethod
+    async def get_ended_games_count(self) -> int: ...
+
+    @abstractmethod
     async def get_games(
         self,
+        limit: int | None = None,
+        offset: int | None = None,
         player_id: int | None = None,
         seat_number: int | None = None,
         role__in: list[core.Roles] | None = None,

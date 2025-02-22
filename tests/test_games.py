@@ -18,7 +18,7 @@ from tests.conftest import (
 from tests.mocks import FakeDBRepository
 from usecases import AssignPlayerToSeatUseCase, CreateGameUseCase, EndGameUseCase
 from usecases.errors import ValidationError
-from usecases.get_game import GetGameUseCase
+from usecases.get_games import GetGamesUseCase
 from usecases.schemas import GameSchema, PlayerSchema
 
 
@@ -106,7 +106,7 @@ async def test_assign_player_to_seat(
     with expectation:
         db = FakeDBRepository(players={player.id: player}, games={game.id: game})
         assign_uc = AssignPlayerToSeatUseCase(db=db)
-        get_uc = GetGameUseCase(db=db)
+        get_uc = GetGamesUseCase(db=db)
         await assign_uc.assign_player_to_seat(
             game_id=game.id,
             player_id=player.id,

@@ -51,9 +51,18 @@ class EndGameCallbackFactory(CallbackData, prefix="end"):
     result: core.GameResults
 
 
+class GamesDetailPageCallbackFactory(CallbackData, prefix="game"):
+    game_id: int
+    page: int
+
+
+class GamesCurrentPageCallbackFactory(CallbackData, prefix="game"):
+    page: int
+
+
 class PlayerCallbackFactory(CallbackData, prefix="player"):
     player_id: int
-    players_page: int
+    page: int
 
 
 class PlayersCurrentPageCallbackFactory(CallbackData, prefix="players"):

@@ -23,7 +23,7 @@ def _get_players_builder(players: list[PlayerSchema], from_page: int) -> InlineK
     for player in players:
         builder.button(
             text=f"{player.nickname}",
-            callback_data=PlayerCallbackFactory(player_id=player.id, players_page=from_page).pack(),
+            callback_data=PlayerCallbackFactory(player_id=player.id, page=from_page).pack(),
         )
     builder.adjust(2)
     return builder
@@ -32,8 +32,7 @@ def _get_players_builder(players: list[PlayerSchema], from_page: int) -> InlineK
 @router.message(F.text.lower() == "список игроков")
 async def players_list(message: types.Message):
     uc: GetPlayersUseCase = container.resolve(GetPlayersUseCase)
-    players = await uc.get_players(limit=PLAYERS_PER_PAGE)
-    players_count = await uc.get_players_count()
+    players, players_count = await uc.get_players(limit=PLAYERS_PER_PAGE)
     builder = _get_players_builder(players, from_page=0)
     builder.adjust(2)
     if not players:
@@ -49,8 +48,7 @@ async def players_list(message: types.Message):
 @router.callback_query(PlayersCurrentPageCallbackFactory.filter())
 async def get_current_page_of_players(callback_query: CallbackQuery, callback_data: PlayersCurrentPageCallbackFactory):
     uc: GetPlayersUseCase = container.resolve(GetPlayersUseCase)
-    players = await uc.get_players(limit=PLAYERS_PER_PAGE, offset=callback_data.page * PLAYERS_PER_PAGE)
-    players_count = await uc.get_players_count()
+    players, players_count = await uc.get_players(limit=PLAYERS_PER_PAGE, offset=callback_data.page * PLAYERS_PER_PAGE)
     builder = _get_players_builder(players, callback_data.page)
     builder.adjust(2)
     buttons = []
@@ -74,7 +72,7 @@ async def get_current_page_of_players(callback_query: CallbackQuery, callback_da
     await callback_query.answer()
 
 
-def _get_playerr_stats_text(player: PlayerStatsSchema) -> str:
+def _get_player_stats_text(player: PlayerStatsSchema) -> str:
     games_count_total_text = f"{player.games_count_total}"
     win_percent_general_text = f"{player.win_percent_general}%" if player.win_percent_general is not None else "--"
     win_percent_black_team_text = (
@@ -112,13 +110,13 @@ async def player_detail(callback_query: CallbackQuery, callback_data: PlayerCall
             [
                 InlineKeyboardButton(
                     text="Назад",
-                    callback_data=PlayersCurrentPageCallbackFactory(page=callback_data.players_page).pack(),
+                    callback_data=PlayersCurrentPageCallbackFactory(page=callback_data.page).pack(),
                 )
             ],
         ]
     )
     await callback_query.message.edit_text(
-        text=_get_playerr_stats_text(player_stats), reply_markup=kb, parse_mode=ParseMode.MARKDOWN
+        text=_get_player_stats_text(player_stats), reply_markup=kb, parse_mode=ParseMode.MARKDOWN
     )
     await callback_query.answer()
 

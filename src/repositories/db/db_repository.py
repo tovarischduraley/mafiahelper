@@ -139,23 +139,17 @@ class DBRepository(DBRepositoryInterface):
         return self._format_game(game)
 
     async def get_games(
-        self,
-        limit: int | None = None,
-        offset: int | None = None,
-        player_id: int | None = None,
-        seat_number: int | None = None,
-        role__in: list[core.Roles] | None = None,
-        result__in: list[core.GameResults] | None = None,
-        status: core.GameStatuses | None = None,
-        is_won: bool | None = None,
+            self,
+            player_id: int | None = None,
+            seat_number: int | None = None,
+            role__in: list[core.Roles] | None = None,
+            result__in: list[core.GameResults] | None = None,
+            status: core.GameStatuses | None = None,
+            is_won: bool | None = None,
     ) -> list[GameSchema]:
         query = (
-            select(Game).options(joinedload(Game.players).joinedload(PlayerGame.player))
+            select(Game).join(PlayerGame).join(Player).options(joinedload(Game.players).joinedload(PlayerGame.player))
         )
-        if limit is not None:
-            query = query.limit(limit)
-        if offset is not None:
-            query = query.offset(offset)
         if player_id is not None:
             query = query.where(PlayerGame.player_id == player_id)
         if role__in is not None:

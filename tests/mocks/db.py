@@ -131,8 +131,6 @@ class FakeDBRepository(DBRepositoryInterface):
 
     async def get_games(
         self,
-        limit: int | None = None,
-        offset: int | None = None,
         player_id: int | None = None,
         seat_number: int | None = None,
         role__in: list[core.Roles] | None = None,
@@ -155,15 +153,7 @@ class FakeDBRepository(DBRepositoryInterface):
             if not player_id:
                 raise Exception("TEST no user_id in filters")
             games = filter(lambda g: self._user_won(g, player_id), games)
-        match limit, offset:
-            case None, None:
-                return list(games)
-            case None, _:
-                return list(games)[offset:]
-            case _, None:
-                return list(games)[:limit]
-            case _, _:
-                return list(games)[offset : offset + limit]
+        return list(games)
 
     @staticmethod
     def _user_won(game: GameSchema, user_id: int) -> bool:

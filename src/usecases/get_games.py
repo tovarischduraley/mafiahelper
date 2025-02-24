@@ -20,9 +20,16 @@ class GetGamesUseCase:
     ) -> tuple[Iterable[GameSchema], int]:
         async with self._db as db:
             games = await db.get_games(
-                limit=limit,
-                offset=offset,
                 status=GameStatuses.ENDED,
             )
             count = await db.get_ended_games_count()
+            match limit, offset:
+                case None, None:
+                    ...
+                case _, None:
+                    games = games[:limit]
+                case None, _:
+                    games = games[offset:]
+                case _, _:
+                    games = games[offset:limit + offset]
             return games, count

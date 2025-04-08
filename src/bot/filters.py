@@ -24,7 +24,7 @@ class GameSeatCallbackFactory(CallbackData, prefix="game_seat"):
     page: int
 
 
-class GameCallbackFactory(CallbackData, prefix="game"):
+class GameCallbackFactory(CallbackData, prefix="game_detail"):
     game_id: int
 
 

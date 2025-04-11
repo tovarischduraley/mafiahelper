@@ -1,5 +1,7 @@
 from pydantic_settings import BaseSettings
+from dotenv import find_dotenv, load_dotenv
 
+load_dotenv(find_dotenv())
 
 class DBConfig(BaseSettings):
     DB_HOST: str

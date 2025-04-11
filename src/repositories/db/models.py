@@ -36,6 +36,7 @@ class Player(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     fio: Mapped[Optional[str]] = mapped_column(nullable=True)
     nickname: Mapped[Optional[str]] = mapped_column(nullable=True)
+    avatar_path: Mapped[Optional[str]] = mapped_column(nullable=True)
 
     games: Mapped[list["PlayerGame"]] = relationship(back_populates="player")
 

@@ -1,0 +1,7 @@
+{% if p.role == "sheriff" %}
+    <div class="role_container text red">Ш</div>
+{% elif p.role == "mafia" %}
+    <div class="role_container text black">М</div>
+{% elif p.role == "don" %}
+    <div class="role_container text black">Д</div>
+{% endif %}

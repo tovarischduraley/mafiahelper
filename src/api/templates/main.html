@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Mafia</title>
+    <link href='https://fonts.googleapis.com/css?family=Inter' rel='stylesheet'>
+    <link href="../static/css/main.css" rel="stylesheet">
+    <link rel="icon" type="image/x-icon" href="../static/img/pistol.png">
+</head>
+<body>
+    <div class="container">
+        {% if players %}
+            {% for p in players %}
+                {% include "player_card.html" %}
+            {% endfor %}
+        {% endif %}
+    </div>
+</body>
+</html>

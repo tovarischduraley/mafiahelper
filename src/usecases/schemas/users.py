@@ -18,6 +18,7 @@ class UserSchema(BaseModel):
 class PlayerSchema(BaseEntity):
     fio: str | None
     nickname: str | None
+    avatar_path: str | None = None
 
 
 class PlayerStatsSchema(BaseModel):

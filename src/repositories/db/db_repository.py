@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.orm import joinedload
 
 import core
-from core import GameStatuses
+from core import GameResults, GameStatuses, Roles
 from usecases.errors import NotFoundError
 from usecases.interfaces import DBRepositoryInterface
 from usecases.schemas import (
@@ -90,45 +90,28 @@ class DBRepository(DBRepositoryInterface):
         return PlayerSchema.model_validate(user, from_attributes=True)
 
     @staticmethod
-    def _format_game(game: Game) -> GameSchema:
+    def _format_player_by_player_game(p: PlayerGame) -> PlayerInGameSchema:
+        return PlayerInGameSchema(
+            id=p.player.id,
+            fio=p.player.fio,
+            nickname=p.player.nickname,
+            role=Roles(p.role),
+            number=p.number,
+            avatar_path=p.player.avatar_path,
+        )
+
+    @classmethod
+    def _format_game(cls, game: Game) -> GameSchema:
         first_killed = next(filter(lambda p: p.is_first_killed, game.players), None)
         return GameSchema(
             id=game.id,
             comments=game.comments,
-            result=game.result,
-            status=game.status,
-            players={
-                PlayerInGameSchema(
-                    id=p.player.id,
-                    fio=p.player.fio,
-                    nickname=p.player.nickname,
-                    role=p.role,
-                    number=p.number,
-                )
-                for p in game.players
-            },
+            result=GameResults(game.result) if game.result else None,
+            status=GameStatuses(game.status),
+            players={cls._format_player_by_player_game(p) for p in game.players},
             created_at=game.created_at.replace(tzinfo=pytz.timezone("Europe/Moscow")),
-            best_move={
-                PlayerInGameSchema(
-                    id=p.player.id,
-                    fio=p.player.fio,
-                    nickname=p.player.nickname,
-                    role=p.role,
-                    number=p.number,
-                )
-                for p in game.players
-                if p.in_best_move
-            }
-            or None,
-            first_killed=PlayerInGameSchema(
-                id=first_killed.player.id,
-                fio=first_killed.player.fio,
-                nickname=first_killed.player.nickname,
-                role=first_killed.role,
-                number=first_killed.number,
-            )
-            if first_killed
-            else None,
+            best_move={cls._format_player_by_player_game(p) for p in game.players if p.in_best_move} or None,
+            first_killed=cls._format_player_by_player_game(first_killed) if first_killed else None,
         )
 
     async def get_game_by_id(self, game_id: int) -> GameSchema:
@@ -273,7 +256,7 @@ class DBRepository(DBRepositoryInterface):
         return RawGameSchema(
             id=game.id,
             created_at=game.created_at,
-            status=game.status,
-            result=game.result,
+            status=GameStatuses(game.status),
+            result=GameResults(game.result) if game.result else None,
             comments=game.comments,
         )

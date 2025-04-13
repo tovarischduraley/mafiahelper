@@ -1,0 +1,28 @@
+<div class="player_card">
+  {% include "role.html" %}
+  {% if p.avatar_path %}
+      <img class="avatar" src="../static/{{ p.avatar_path }}" alt="No avatar">
+  {% else %}
+    <img class="avatar" src="../static/img/avatars/default.png" alt="No default">
+  {% endif %}
+  <div class="player_bg"></div>
+  {% if (p.role == "civilian" or p.role == "sheriff") %}
+  <div class="nickname_container text red">
+    <div class="player_number">
+      {{ p.number }}
+    </div>
+    <div class="player_nickname">
+      {{p.nickname}}
+    </div>
+  </div>
+  {% else %}
+  <div class="nickname_container text black">
+    <div class="player_number">
+      {{ p.number }}
+    </div>
+    <div class="player_nickname">
+      {{p.nickname}}
+    </div>
+  </div>
+  {% endif %}
+</div>

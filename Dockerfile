@@ -11,11 +11,3 @@ RUN pip install --root-user-action ignore uv
 RUN uv sync --no-dev --compile-bytecode
 RUN chmod +x entrypoint-bot.sh
 RUN chmod +x entrypoint-api.sh
-#
-#FROM builder as bot
-#
-#ENTRYPOINT ["./entrypoint.sh"]
-#
-#FROM builder as api
-#
-#ENTRYPOINT ["entrypoint-api.sh"]

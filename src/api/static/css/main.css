@@ -41,6 +41,8 @@ body {
   position: absolute;
   bottom: 40px;
   z-index: 0;
+  width: 180px;
+  height: 190px;
 }
 .player_bg {
   width: 180px;

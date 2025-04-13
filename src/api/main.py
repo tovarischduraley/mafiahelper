@@ -9,7 +9,7 @@ from dependencies import container
 from usecases import GetPlayersUseCase
 
 app = FastAPI(title="MafiaAPI")
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/static", StaticFiles(directory="api/static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 

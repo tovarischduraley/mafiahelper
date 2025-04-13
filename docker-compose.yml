@@ -6,7 +6,8 @@ services:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
-    volumes: [".pgdata:/var/lib/postgresql@17/data/pgdata"]
+    volumes:
+      - ".pgdata:/var/lib/postgresql@17/data/pgdata"
     env_file: .env
     ports:
       - "5432:5432"
@@ -15,4 +16,25 @@ services:
     container_name: bot
     command: "sh ./entrypoint.sh"
     env_file: .env
-    depends_on: [db]
+    depends_on:
+    - db
+
+  api:
+    build: .
+    container_name: api
+    restart: always
+    command: "sh ./entrypoint-api.sh"
+    env_file: .env
+    depends_on:
+      - db
+
+  nginx:
+    container_name: nginx
+    image: nginx:latest
+    ports:
+      - "80:80"
+      - "443:433"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+    depends_on:
+      - api

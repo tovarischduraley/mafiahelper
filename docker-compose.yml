@@ -33,7 +33,6 @@ services:
     image: nginx:latest
     ports:
       - "80:80"
-      - "443:433"
     volumes:
       - ./nginx/conf.d:/etc/nginx/conf.d
     depends_on:

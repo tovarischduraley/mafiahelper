@@ -42,7 +42,7 @@ GAMES_PER_PAGE = 5
 ORDERED_PLAYERS_NUMBERS = [5, 6, 4, 7, 3, 8, 2, 9, 1, 10]
 
 
-def _get_player_by_number(number: int, players: list[PlayerInGameSchema]) -> PlayerInGameSchema | None:
+def _get_player_by_number(number: int, players: set[PlayerInGameSchema]) -> PlayerInGameSchema | None:
     if player := next(filter(lambda p: p.number == number, players), None):
         return player
     return None
@@ -67,8 +67,7 @@ def _get_games_builder(games: list[GameSchema], from_page: int) -> InlineKeyboar
     builder = InlineKeyboardBuilder()
     for game in games:
         builder.button(
-            text=(f"{get_team_emoji_by_game_result(game.result)} "
-                 f"{game.created_at.strftime("%d.%m.%Y %H:%M")}"),
+            text=(f"{get_team_emoji_by_game_result(game.result)} " f"{game.created_at.strftime("%d.%m.%Y %H:%M")}"),
             callback_data=GamesDetailPageCallbackFactory(
                 game_id=game.id,
                 page=from_page,
@@ -125,11 +124,18 @@ def _get_best_move_text(
     first_killed: PlayerInGameSchema | None,
     best_move: set[PlayerInGameSchema] | None,
 ) -> str:
-    best_move_text = (
-        ", ".join([f"{p.number}" for p in best_move]) + " (" + ", ".join([f"{p.nickname}" for p in best_move]) + ")"
-        if best_move
-        else "--"
-    )
+    if not best_move:
+        best_move_text = "--"
+    else:
+        sorted_best_move = sorted(best_move, key=lambda p: p.number)
+        best_move_text = (
+            ", ".join([f"{p.number}" for p in sorted_best_move])
+            + " ("
+            + ", ".join([f"{p.nickname}" for p in sorted_best_move])
+            + ")"
+            if sorted_best_move
+            else "--"
+        )
     return f"ПУ: {first_killed.nickname if first_killed else "--"}\nЛХ: {best_move_text}\n"
 
 
@@ -335,16 +341,14 @@ async def get_current_page_of_games(
     await callback_query.message.edit_text(text="Игры:", reply_markup=builder.as_markup())
     await callback_query.answer()
 
+
 @router.callback_query(GamesDetailPageCallbackFactory.filter())
 async def get_game_detail(callback_query: types.CallbackQuery, callback_data: GamesDetailPageCallbackFactory):
     get_uc: GetGamesUseCase = container.resolve(GetGamesUseCase)
     game = await get_uc.get_game(callback_data.game_id)
     text, _ = _get_game_text_and_keyboard(game=game)
     builder = InlineKeyboardBuilder()
-    builder.button(
-        text="Назад",
-        callback_data=GamesCurrentPageCallbackFactory(page=callback_data.page).pack()
-    )
+    builder.button(text="Назад", callback_data=GamesCurrentPageCallbackFactory(page=callback_data.page).pack())
     await callback_query.message.edit_text(text=text, reply_markup=builder.as_markup())
     await callback_query.answer()
 

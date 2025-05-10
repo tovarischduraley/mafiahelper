@@ -67,7 +67,7 @@ def _get_games_builder(games: list[GameSchema], from_page: int) -> InlineKeyboar
     builder = InlineKeyboardBuilder()
     for game in games:
         builder.button(
-            text=(f"{get_team_emoji_by_game_result(game.result)} " f"{game.created_at.strftime("%d.%m.%Y %H:%M")}"),
+            text=f"{get_team_emoji_by_game_result(game.result)} {game.created_at.strftime("%d.%m.%Y %H:%M")}",
             callback_data=GamesDetailPageCallbackFactory(
                 game_id=game.id,
                 page=from_page,

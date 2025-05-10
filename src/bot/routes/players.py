@@ -87,17 +87,35 @@ def _get_player_stats_text(player: PlayerStatsSchema) -> str:
     win_percent_as_sheriff_text = (
         f"{player.win_percent_as_sheriff}%" if player.win_percent_as_sheriff is not None else "--"
     )
+    best_move_text = (
+        f"\n\n*Лучший ход*:\n"
+        f"Всего: {player.best_move_count_total}\n"
+        f"0 / 3 черных: {player.zero_mafia_best_move_count}\n"
+        f"1 / 3 черных: {player.one_mafia_best_move_count}\n"
+        f"2 / 3 черных: {player.two_mafia_best_move_count}\n"
+        f"3 / 3 черных: {player.three_mafia_best_move_count}"
+    ) if player.best_move_count_total else ""
+
     return (
         f"*{player.nickname}*\n"
         f"{player.fio}\n\n"
         f"Всего игр: {games_count_total_text}\n"
-        f"Общий процент побед: {win_percent_general_text}\n\n"
-        f"{get_team_emoji(Teams.BLACK)}\t Процент побед в черной команде: {win_percent_black_team_text}\n"
-        f"{get_team_emoji(Teams.RED)}\t Процент побед в красной команде: {win_percent_red_team_text}\n\n"
-        f"{get_role_emoji(Roles.CIVILIAN)}\t Процент побед за мирного жителя: {win_percent_as_civilian_text}\n"
-        f"{get_role_emoji(Roles.MAFIA)}\t Процент побед за мафию: {win_percent_as_mafia_text}\n"
-        f"{get_role_emoji(Roles.DON)}\t Процент побед за дона: {win_percent_as_don_text}\n"
-        f"{get_role_emoji(Roles.SHERIFF)}\t Процент побед за шерифа: {win_percent_as_sheriff_text}\n"
+        f"Убит в первую ночь: {player.first_killed_count}\n"
+        f"Общий процент побед: "
+        f"{win_percent_general_text} ({player.won_games_count_total} / {games_count_total_text})\n\n"
+        f"{get_team_emoji(Teams.BLACK)}\t Черная команда: "
+        f"{win_percent_black_team_text} ({player.won_games_count_black_team} / {player.games_count_black_team})\n"
+        f"{get_team_emoji(Teams.RED)}\t Красная команда: "
+        f"{win_percent_red_team_text} ({player.won_games_count_red_team} / {player.games_count_red_team})\n\n"
+        f"{get_role_emoji(Roles.CIVILIAN)}\t Мирный житель: "
+        f"{win_percent_as_civilian_text} ({player.won_games_count_as_civilian} / {player.games_count_as_civilian})\n"
+        f"{get_role_emoji(Roles.MAFIA)}\t Мафия: "
+        f"{win_percent_as_mafia_text} ({player.won_games_count_as_mafia} / {player.games_count_as_mafia})\n"
+        f"{get_role_emoji(Roles.DON)}\t Дон: "
+        f"{win_percent_as_don_text} ({player.won_games_count_as_don} / {player.games_count_as_don})\n"
+        f"{get_role_emoji(Roles.SHERIFF)}\t Шериф: "
+        f"{win_percent_as_sheriff_text} ({player.won_games_count_as_sheriff} / {player.games_count_as_sheriff})"
+        f"{best_move_text}"
     )
 
 

@@ -46,6 +46,25 @@ sheriff = PlayerInGameSchema(
                 win_percent_as_mafia=None,
                 win_percent_as_don=None,
                 win_percent_as_sheriff=None,
+                games_count_as_civilian=2,
+                games_count_red_team=2,
+                games_count_black_team=0,
+                games_count_as_don=0,
+                games_count_as_mafia=0,
+                games_count_as_sheriff=0,
+                won_games_count_as_civilian=2,
+                won_games_count_as_don=0,
+                won_games_count_as_mafia=0,
+                won_games_count_as_sheriff=0,
+                won_games_count_black_team=0,
+                won_games_count_red_team=2,
+                won_games_count_total=2,
+                first_killed_count=0,
+                best_move_count_total=0,
+                zero_mafia_best_move_count=0,
+                one_mafia_best_move_count=0,
+                two_mafia_best_move_count=0,
+                three_mafia_best_move_count=0,
             ),
             does_not_raise(),
         ),
@@ -63,6 +82,25 @@ sheriff = PlayerInGameSchema(
                 win_percent_as_mafia=100,
                 win_percent_as_don=None,
                 win_percent_as_sheriff=100,
+                games_count_as_civilian=2,
+                games_count_red_team=3,
+                games_count_black_team=1,
+                games_count_as_don=0,
+                games_count_as_mafia=1,
+                games_count_as_sheriff=1,
+                won_games_count_as_civilian=1,
+                won_games_count_as_don=0,
+                won_games_count_as_mafia=1,
+                won_games_count_as_sheriff=1,
+                won_games_count_black_team=1,
+                won_games_count_red_team=2,
+                won_games_count_total=3,
+                first_killed_count=0,
+                best_move_count_total=0,
+                zero_mafia_best_move_count=0,
+                one_mafia_best_move_count=0,
+                two_mafia_best_move_count=0,
+                three_mafia_best_move_count=0,
             ),
             does_not_raise(),
         ),
@@ -80,6 +118,25 @@ sheriff = PlayerInGameSchema(
                 win_percent_as_mafia=None,
                 win_percent_as_don=None,
                 win_percent_as_sheriff=None,
+                games_count_as_civilian=0,
+                games_count_red_team=0,
+                games_count_black_team=0,
+                games_count_as_don=0,
+                games_count_as_mafia=0,
+                games_count_as_sheriff=0,
+                won_games_count_as_civilian=0,
+                won_games_count_as_don=0,
+                won_games_count_as_mafia=0,
+                won_games_count_as_sheriff=0,
+                won_games_count_black_team=0,
+                won_games_count_red_team=0,
+                won_games_count_total=0,
+                first_killed_count=0,
+                best_move_count_total=0,
+                zero_mafia_best_move_count=0,
+                one_mafia_best_move_count=0,
+                two_mafia_best_move_count=0,
+                three_mafia_best_move_count=0,
             ),
             does_not_raise(),
         ),
@@ -93,4 +150,30 @@ async def test_player_stats(
     uc = GetPlayerStatsUseCase(db)
     with expectation:
         result = await uc.get_player_stats(player_id=player.id)
-        assert result == stats
+        assert result.games_count_total == stats.games_count_total
+        assert result.win_percent_general == stats.win_percent_general
+        assert result.win_percent_black_team == stats.win_percent_black_team
+        assert result.win_percent_red_team == stats.win_percent_red_team
+        assert result.win_percent_as_civilian == stats.win_percent_as_civilian
+        assert result.win_percent_as_mafia == stats.win_percent_as_mafia
+        assert result.win_percent_as_don == stats.win_percent_as_don
+        assert result.win_percent_as_sheriff == stats.win_percent_as_sheriff
+        assert result.games_count_as_civilian == stats.games_count_as_civilian
+        assert result.games_count_red_team == stats.games_count_red_team
+        assert result.games_count_black_team == stats.games_count_black_team
+        assert result.games_count_as_don == stats.games_count_as_don
+        assert result.games_count_as_mafia == stats.games_count_as_mafia
+        assert result.games_count_as_sheriff == stats.games_count_as_sheriff
+        assert result.won_games_count_as_civilian == stats.won_games_count_as_civilian
+        assert result.won_games_count_as_don == stats.won_games_count_as_don
+        assert result.won_games_count_as_mafia == stats.won_games_count_as_mafia
+        assert result.won_games_count_as_sheriff == stats.won_games_count_as_sheriff
+        assert result.won_games_count_black_team == stats.won_games_count_black_team
+        assert result.won_games_count_red_team == stats.won_games_count_red_team
+        assert result.won_games_count_total == stats.won_games_count_total
+        assert result.first_killed_count == stats.first_killed_count
+        assert result.best_move_count_total == stats.best_move_count_total
+        assert result.zero_mafia_best_move_count == stats.zero_mafia_best_move_count
+        assert result.one_mafia_best_move_count == stats.one_mafia_best_move_count
+        assert result.two_mafia_best_move_count == stats.two_mafia_best_move_count
+        assert result.three_mafia_best_move_count == stats.three_mafia_best_move_count

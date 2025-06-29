@@ -1,8 +1,11 @@
 import asyncio
 import logging
 
-from aiogram import Bot, Dispatcher, types
+from aiogram import Bot, Dispatcher, F
 from aiogram.filters.command import Command
+from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import State, StatesGroup
+from aiogram.types import Message
 
 from bot.auth import validate_admin
 from bot.keyboards import admin_kb, user_kb
@@ -18,7 +21,7 @@ dp = Dispatcher()
 
 
 @dp.message(Command("start"))
-async def cmd_start(message: types.Message):
+async def cmd_start(message: Message):
     try:
         validate_admin(message.from_user.id)
         await message.answer(
@@ -30,6 +33,14 @@ async def cmd_start(message: types.Message):
             text="Выберите опцию",
             reply_markup=user_kb,
         )
+
+class CreatePlayerStates(StatesGroup):
+    one = State()
+    two = State()
+
+@dp.message(F.text)
+async def create_player_cancel(message: Message, state: FSMContext):
+    if 
 
 
 async def main():

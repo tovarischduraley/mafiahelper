@@ -88,13 +88,17 @@ def _get_player_stats_text(player: PlayerStatsSchema) -> str:
         f"{player.win_percent_as_sheriff}%" if player.win_percent_as_sheriff is not None else "--"
     )
     best_move_text = (
-        f"\n\n*Лучший ход*:\n"
-        f"Всего: {player.best_move_count_total}\n"
-        f"0 / 3 черных: {player.zero_mafia_best_move_count}\n"
-        f"1 / 3 черных: {player.one_mafia_best_move_count}\n"
-        f"2 / 3 черных: {player.two_mafia_best_move_count}\n"
-        f"3 / 3 черных: {player.three_mafia_best_move_count}"
-    ) if player.best_move_count_total else ""
+        (
+            f"\n\n*Лучший ход*:\n"
+            f"Всего: {player.best_move_count_total}\n"
+            f"0 / 3 черных: {player.zero_mafia_best_move_count}\n"
+            f"1 / 3 черных: {player.one_mafia_best_move_count}\n"
+            f"2 / 3 черных: {player.two_mafia_best_move_count}\n"
+            f"3 / 3 черных: {player.three_mafia_best_move_count}"
+        )
+        if player.best_move_count_total
+        else ""
+    )
 
     return (
         f"*{player.nickname}*\n"
@@ -139,6 +143,14 @@ async def player_detail(callback_query: CallbackQuery, callback_data: PlayerCall
     await callback_query.answer()
 
 
+def _get_new_player_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="Отмена", callback_data=PlayersCurrentPageCallbackFactory(page=0).pack())],
+        ]
+    )
+
+
 @router.message(F.text.lower() == "создать игрока")
 async def create_player(message: types.Message, state: FSMContext):
     validate_admin(message.from_user.id)
@@ -162,7 +174,7 @@ async def process_player_nickname(message: types.Message, state: FSMContext):
     player_data = await state.get_data()
     await uc.create_player(CreatePlayerSchema(**player_data))
     await message.answer(
-        text=f"Вы создали игрока!\n\nИмя: {player_data["fio"]}\nПсевдоним: {player_data["nickname"]}",
+        text=f"Вы создали игрока!\n\nИмя: {player_data['fio']}\nПсевдоним: {player_data['nickname']}",
         reply_markup=keyboards.admin_kb,
     )
     await state.clear()

@@ -69,6 +69,16 @@ class PlayersCurrentPageCallbackFactory(CallbackData, prefix="players"):
     page: int
 
 
+class CreatePlayerCancelCallbackFactory(CallbackData, prefix="create_player_cancel"):
+    create_message_id: int
+
+
+class CreatePlayerCallbackFactory(CallbackData, prefix="create_player"):
+    create_message_id: int
+    fio: str
+    nickname: str = ""
+
+
 class GetSeatCallbackFactory(CallbackData, prefix="seats"):
     allowed_seats: str | None
     timestamp: str = str(time.time() * 1000)

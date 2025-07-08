@@ -1,7 +1,7 @@
 services:
   db:
     image: postgres:17-alpine
-    container_name: db
+    container_name: mafia_db
     environment:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USER}
@@ -11,7 +11,7 @@ services:
     env_file: .env
   bot:
     build: .
-    container_name: bot
+    container_name: mafia_bot
     command: "sh ./entrypoint-bot.sh"
     env_file: .env
     depends_on:
@@ -19,7 +19,7 @@ services:
 
   api:
     build: .
-    container_name: api
+    container_name: mafia_api
     restart: always
     command: "sh ./entrypoint-api.sh"
     env_file: .env
@@ -29,7 +29,7 @@ services:
       - ./src/api/static:/app/src/api/static
 
   nginx:
-    container_name: nginx
+    container_name: mafia_nginx
     image: nginx:latest
     ports:
       - "80:80"

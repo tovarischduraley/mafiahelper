@@ -48,6 +48,12 @@ class DBRepository(DBRepositoryInterface):
         self._session.add(User(**user.model_dump()))
         await self._session.flush()
 
+    async def delete_player(self, player_id: int) -> None:
+        player = await self._session.get(Player, player_id)
+        if not player:
+            raise NotFoundError(f"Player id={player_id} not found")
+        await self._session.delete(player)
+
     async def get_users(self) -> list[UserSchema]:
         return [
             UserSchema.model_validate(u, from_attributes=True)

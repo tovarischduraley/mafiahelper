@@ -34,6 +34,9 @@ class DBRepositoryInterface(ABC):
     ) -> list[PlayerSchema]: ...
 
     @abstractmethod
+    async def delete_player(self, player_id: int) -> None: ...
+
+    @abstractmethod
     async def get_users(self) -> list[UserSchema]: ...
 
     @abstractmethod

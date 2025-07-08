@@ -3,7 +3,7 @@ from contextlib import nullcontext as does_not_raise
 
 import pytest
 
-from src.core import GameResults, Roles, get_win_result_by_player_role
+from core import GameResults, Roles, get_win_result_by_player_role
 
 
 @pytest.mark.parametrize(

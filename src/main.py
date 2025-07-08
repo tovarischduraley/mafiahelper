@@ -1,10 +1,8 @@
 import asyncio
 import logging
 
-from aiogram import Bot, Dispatcher, F
+from aiogram import Bot, Dispatcher
 from aiogram.filters.command import Command
-from aiogram.fsm.context import FSMContext
-from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import Message
 
 from bot.auth import validate_admin
@@ -33,15 +31,6 @@ async def cmd_start(message: Message):
             text="Выберите опцию",
             reply_markup=user_kb,
         )
-
-class CreatePlayerStates(StatesGroup):
-    one = State()
-    two = State()
-
-@dp.message(F.text)
-async def create_player_cancel(message: Message, state: FSMContext):
-    if 
-
 
 async def main():
     await bot.delete_webhook(drop_pending_updates=True)

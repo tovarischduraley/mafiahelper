@@ -3,6 +3,7 @@ from .assign_as_first_killed import AssignAsFirstKilledUseCase
 from .assign_player_to_seat import AssignPlayerToSeatUseCase
 from .create_game import CreateGameUseCase
 from .create_player import CreatePlayerUseCase
+from .delete_player import DeletePlayerUseCase
 from .end_game import EndGameUseCase
 from .get_games import GetGamesUseCase
 from .get_player_stats import GetPlayerStatsUseCase

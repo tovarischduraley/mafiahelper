@@ -1,17 +1,21 @@
+import logging
+import math
+
 from aiogram import F, Router, types
 from aiogram.enums import ParseMode
 from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
+from aiogram.types import CallbackQuery, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from bot import keyboards
-from bot.auth import validate_admin
-from bot.filters import PlayerCallbackFactory, PlayersCurrentPageCallbackFactory
+from bot.auth import is_admin, validate_admin
+from bot.filters import DeletePlayerCallbackFactory, PlayerCallbackFactory, PlayersCurrentPageCallbackFactory
 from bot.states import CreatePlayerStates
 from bot.utils import get_role_emoji, get_team_emoji
 from core import Roles, Teams
 from dependencies import container
-from usecases import CreatePlayerUseCase, GetPlayerStatsUseCase, GetPlayersUseCase
+from usecases import CreatePlayerUseCase, DeletePlayerUseCase, GetPlayerStatsUseCase, GetPlayersUseCase
+from usecases.errors import ValidationError
 from usecases.schemas import CreatePlayerSchema, PlayerSchema, PlayerStatsSchema
 
 router = Router()
@@ -49,6 +53,14 @@ async def players_list(message: types.Message):
 async def get_current_page_of_players(callback_query: CallbackQuery, callback_data: PlayersCurrentPageCallbackFactory):
     uc: GetPlayersUseCase = container.resolve(GetPlayersUseCase)
     players, players_count = await uc.get_players(limit=PLAYERS_PER_PAGE, offset=callback_data.page * PLAYERS_PER_PAGE)
+    if not players_count:
+        await callback_query.message.edit_text(text="Список игроков пуст.")
+        await callback_query.answer()
+        return
+    if callback_data.page > math.ceil(players_count / PLAYERS_PER_PAGE - 1):
+        callback_data.page = math.ceil(players_count / PLAYERS_PER_PAGE - 1)
+        players, players_count = await uc.get_players(limit=PLAYERS_PER_PAGE, offset=callback_data.page)
+
     builder = _get_players_builder(players, callback_data.page)
     builder.adjust(2)
     buttons = []
@@ -123,32 +135,48 @@ def _get_player_stats_text(player: PlayerStatsSchema) -> str:
     )
 
 
+
 @router.callback_query(PlayerCallbackFactory.filter())
 async def player_detail(callback_query: CallbackQuery, callback_data: PlayerCallbackFactory):
     uc: GetPlayerStatsUseCase = container.resolve(GetPlayerStatsUseCase)
     player_stats = await uc.get_player_stats(player_id=callback_data.player_id)
-    kb = InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton(
-                    text="Назад",
-                    callback_data=PlayersCurrentPageCallbackFactory(page=callback_data.page).pack(),
-                )
-            ],
-        ]
-    )
+    builder = InlineKeyboardBuilder()
+    logging.error(f"player page = {callback_data.page}")
+    buttons = [
+        InlineKeyboardButton(
+            text="Назад",
+            callback_data=PlayersCurrentPageCallbackFactory(page=callback_data.page).pack(),
+        )
+    ]
+    if is_admin(user_id=callback_query.from_user.id):
+        buttons.append(
+            InlineKeyboardButton(
+                text="❌ Удалить",
+                callback_data=DeletePlayerCallbackFactory(
+                    player_id=callback_data.player_id,
+                    page=callback_data.page
+                ).pack(),
+            )
+        )
+    builder.row(*buttons)
     await callback_query.message.edit_text(
-        text=_get_player_stats_text(player_stats), reply_markup=kb, parse_mode=ParseMode.MARKDOWN
+        text=_get_player_stats_text(player_stats), reply_markup=builder.as_markup(), parse_mode=ParseMode.MARKDOWN
     )
     await callback_query.answer()
 
 
-def _get_new_player_keyboard() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [InlineKeyboardButton(text="Отмена", callback_data=PlayersCurrentPageCallbackFactory(page=0).pack())],
-        ]
-    )
+@router.callback_query(DeletePlayerCallbackFactory.filter())
+async def delete_player(callback_query: CallbackQuery, callback_data: DeletePlayerCallbackFactory):
+    validate_admin(callback_query.from_user.id)
+    uc: DeletePlayerUseCase = container.resolve(DeletePlayerUseCase)
+    try:
+        await uc.delete_player(player_id=callback_data.player_id)
+    except ValidationError as e:
+        await callback_query.answer(text=str(e))
+    else:
+        await get_current_page_of_players(
+            callback_query=callback_query, callback_data=PlayersCurrentPageCallbackFactory(page=callback_data.page)
+        )
 
 
 @router.message(F.text.lower() == "создать игрока")

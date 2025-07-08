@@ -9,6 +9,7 @@ from usecases import (
     AssignPlayerToSeatUseCase,
     CreateGameUseCase,
     CreatePlayerUseCase,
+    DeletePlayerUseCase,
     EndGameUseCase,
     GetGamesUseCase,
     GetPlayerStatsUseCase,
@@ -34,14 +35,15 @@ session_factory = async_sessionmaker(autocommit=False, autoflush=False, bind=eng
 
 container.register(DBRepositoryInterface, factory=DBRepository, session_factory=session_factory)
 container.register(DBRepository, factory=DBRepository, session_factory=session_factory)
-container.register(CreatePlayerUseCase, factory=CreatePlayerUseCase)
-container.register(GetPlayersUseCase, factory=GetPlayersUseCase)
-container.register(CreateGameUseCase, factory=CreateGameUseCase)
-container.register(GetGamesUseCase, factory=GetGamesUseCase)
-container.register(EndGameUseCase, factory=EndGameUseCase)
-container.register(AssignPlayerToSeatUseCase, factory=AssignPlayerToSeatUseCase)
-container.register(GetPlayerStatsUseCase, factory=GetPlayerStatsUseCase)
-container.register(GetSeatUseCase, factory=GetSeatUseCase)
-container.register(UsersUseCase, factory=UsersUseCase)
-container.register(AssignAsFirstKilledUseCase, factory=AssignAsFirstKilledUseCase)
-container.register(AddToBestMoveUseCase, factory=AddToBestMoveUseCase)
+container.register(CreatePlayerUseCase)
+container.register(GetPlayersUseCase)
+container.register(CreateGameUseCase)
+container.register(GetGamesUseCase)
+container.register(EndGameUseCase)
+container.register(AssignPlayerToSeatUseCase)
+container.register(GetPlayerStatsUseCase)
+container.register(GetSeatUseCase)
+container.register(UsersUseCase)
+container.register(AssignAsFirstKilledUseCase)
+container.register(AddToBestMoveUseCase)
+container.register(DeletePlayerUseCase)

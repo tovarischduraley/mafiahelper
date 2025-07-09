@@ -3,7 +3,9 @@ from contextlib import AbstractContextManager
 from contextlib import nullcontext as does_not_raise
 
 import pytest
-from conftest import (
+
+from core import GameResults, GameStatuses, Roles
+from tests.conftest import (
     game_with_best_move_and_no_first_killed,
     game_with_invalid_best_move,
     game_with_invalid_players_quantity,
@@ -13,9 +15,7 @@ from conftest import (
     valid_game,
     valid_player,
 )
-from mocks import FakeDBRepository
-
-from core import GameResults, GameStatuses, Roles
+from tests.mocks import FakeDBRepository
 from usecases import AssignPlayerToSeatUseCase, CreateGameUseCase, EndGameUseCase, GetGamesUseCase
 from usecases.errors import ValidationError
 from usecases.schemas import GameSchema, PlayerSchema

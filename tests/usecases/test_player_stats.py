@@ -2,10 +2,10 @@ from contextlib import AbstractContextManager
 from contextlib import nullcontext as does_not_raise
 
 import pytest
-from conftest import id_g, lost_game, won_game
-from mocks import FakeDBRepository
 
 from core import Roles
+from tests.conftest import id_g, lost_game, won_game
+from tests.mocks import FakeDBRepository
 from usecases import GetPlayerStatsUseCase
 from usecases.schemas import GameSchema, PlayerInGameSchema, PlayerSchema, PlayerStatsSchema
 

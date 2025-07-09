@@ -1,6 +1,6 @@
 import pytest
-from mocks import FakeDBRepository
 
+from tests.mocks import FakeDBRepository
 from usecases import UsersUseCase
 from usecases.schemas import UserSchema
 

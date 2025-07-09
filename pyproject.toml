@@ -1,7 +1,7 @@
 [project]
 name = "mafia"
-version = "1.4"
-description = "Add your description here"
+version = "1.8"
+description = "Telegram Bot for Mafia Game judging"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
@@ -30,5 +30,4 @@ dev = [
 [tool.pytest.ini_options]
 pythonpath = [
     "src",
-    "tests"
 ]

@@ -13,11 +13,13 @@ from usecases.schemas import (
     CreateGameSchema,
     CreatePlayerSchema,
     GameSchema,
+    PlayerInGameSchema,
     PlayerSchema,
+    RawGameSchema,
     UpdateGameSchema,
+    UpdatePlayerSchema,
     UserSchema,
 )
-from usecases.schemas.games import PlayerInGameSchema, RawGameSchema
 
 from .models import Game, Player, PlayerGame, User
 
@@ -53,6 +55,14 @@ class DBRepository(DBRepositoryInterface):
         if not player:
             raise NotFoundError(f"Player id={player_id} not found")
         await self._session.delete(player)
+
+    async def update_player(self, player_id: int, data: UpdatePlayerSchema) -> None:
+        player = await self._session.get(Player, player_id)
+        if not player:
+            raise NotFoundError(f"Player id={player_id} not found")
+        for key, value in data.model_dump(exclude_unset=True).items():
+            setattr(player, key, value)
+        await self._session.flush()
 
     async def get_users(self) -> list[UserSchema]:
         return [

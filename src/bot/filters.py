@@ -64,13 +64,26 @@ class PlayerCallbackFactory(CallbackData, prefix="player"):
     player_id: int
     page: int
 
+
 class DeletePlayerCallbackFactory(CallbackData, prefix="delete_player"):
+    player_id: int
+    page: int
+
+
+class SetPlayerNicknameCallbackFactory(CallbackData, prefix="set_nickname"):
+    player_id: int
+    page: int
+    message_id: int
+
+
+class ClearStatePlayerDetailCallbackFactory(CallbackData, prefix="clear_state_player_detail"):
     player_id: int
     page: int
 
 
 class PlayersCurrentPageCallbackFactory(CallbackData, prefix="players"):
     page: int
+
 
 class GetSeatCallbackFactory(CallbackData, prefix="seats"):
     allowed_seats: str | None

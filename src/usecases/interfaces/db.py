@@ -7,10 +7,11 @@ from usecases.schemas import (
     CreatePlayerSchema,
     GameSchema,
     PlayerSchema,
+    RawGameSchema,
     UpdateGameSchema,
+    UpdatePlayerSchema,
     UserSchema,
 )
-from usecases.schemas.games import RawGameSchema
 
 
 class DBRepositoryInterface(ABC):
@@ -35,6 +36,9 @@ class DBRepositoryInterface(ABC):
 
     @abstractmethod
     async def delete_player(self, player_id: int) -> None: ...
+
+    @abstractmethod
+    async def update_player(self, player_id: int, data: UpdatePlayerSchema) -> None: ...
 
     @abstractmethod
     async def get_users(self) -> list[UserSchema]: ...

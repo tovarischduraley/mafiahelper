@@ -1,20 +1,31 @@
-import logging
 import math
 
 from aiogram import F, Router, types
 from aiogram.enums import ParseMode
 from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery, InlineKeyboardButton
+from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from bot import keyboards
 from bot.auth import is_admin, validate_admin
-from bot.filters import DeletePlayerCallbackFactory, PlayerCallbackFactory, PlayersCurrentPageCallbackFactory
-from bot.states import CreatePlayerStates
+from bot.filters import (
+    ClearStatePlayerDetailCallbackFactory,
+    DeletePlayerCallbackFactory,
+    PlayerCallbackFactory,
+    PlayersCurrentPageCallbackFactory,
+    SetPlayerNicknameCallbackFactory,
+)
+from bot.states import CreatePlayerStates, UpdatePlayerStates
 from bot.utils import get_role_emoji, get_team_emoji
 from core import Roles, Teams
 from dependencies import container
-from usecases import CreatePlayerUseCase, DeletePlayerUseCase, GetPlayerStatsUseCase, GetPlayersUseCase
+from usecases import (
+    CreatePlayerUseCase,
+    DeletePlayerUseCase,
+    GetPlayerStatsUseCase,
+    GetPlayersUseCase,
+    SetPlayerNicknameUseCase,
+)
 from usecases.errors import ValidationError
 from usecases.schemas import CreatePlayerSchema, PlayerSchema, PlayerStatsSchema
 
@@ -31,6 +42,40 @@ def _get_players_builder(players: list[PlayerSchema], from_page: int) -> InlineK
         )
     builder.adjust(2)
     return builder
+
+def _get_player_detail_keyboard(
+        current_user_id: int,
+        back_button_page: int,
+        player_id: int,
+        player_detail_message_id: int,
+) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    if is_admin(user_id=current_user_id):
+        builder.row(
+            InlineKeyboardButton(
+                text="✍️ Изменить ник",
+                callback_data=SetPlayerNicknameCallbackFactory(
+                    player_id=player_id,
+                    page=back_button_page,
+                    message_id=player_detail_message_id,
+                ).pack(),
+            ),
+            InlineKeyboardButton(
+                text="🗑️ Удалить",
+                callback_data=DeletePlayerCallbackFactory(
+                    player_id=player_id,
+                    page=back_button_page,
+                ).pack(),
+            ),
+        )
+    builder.row(
+        InlineKeyboardButton(
+            text="Назад",
+            callback_data=PlayersCurrentPageCallbackFactory(page=back_button_page).pack(),
+        ),
+    )
+    return builder.as_markup()
+
 
 
 @router.message(F.text.lower() == "список игроков")
@@ -135,32 +180,19 @@ def _get_player_stats_text(player: PlayerStatsSchema) -> str:
     )
 
 
-
 @router.callback_query(PlayerCallbackFactory.filter())
 async def player_detail(callback_query: CallbackQuery, callback_data: PlayerCallbackFactory):
     uc: GetPlayerStatsUseCase = container.resolve(GetPlayerStatsUseCase)
     player_stats = await uc.get_player_stats(player_id=callback_data.player_id)
-    builder = InlineKeyboardBuilder()
-    logging.error(f"player page = {callback_data.page}")
-    buttons = [
-        InlineKeyboardButton(
-            text="Назад",
-            callback_data=PlayersCurrentPageCallbackFactory(page=callback_data.page).pack(),
-        )
-    ]
-    if is_admin(user_id=callback_query.from_user.id):
-        buttons.append(
-            InlineKeyboardButton(
-                text="❌ Удалить",
-                callback_data=DeletePlayerCallbackFactory(
-                    player_id=callback_data.player_id,
-                    page=callback_data.page
-                ).pack(),
-            )
-        )
-    builder.row(*buttons)
     await callback_query.message.edit_text(
-        text=_get_player_stats_text(player_stats), reply_markup=builder.as_markup(), parse_mode=ParseMode.MARKDOWN
+        text=_get_player_stats_text(player_stats),
+        reply_markup=_get_player_detail_keyboard(
+            current_user_id=callback_query.from_user.id,
+            player_id=callback_data.player_id,
+            back_button_page=callback_data.page,
+            player_detail_message_id=callback_query.message.message_id,
+        ),
+        parse_mode=ParseMode.MARKDOWN,
     )
     await callback_query.answer()
 
@@ -174,9 +206,69 @@ async def delete_player(callback_query: CallbackQuery, callback_data: DeletePlay
     except ValidationError as e:
         await callback_query.answer(text=str(e))
     else:
+        await callback_query.answer(text="Player deleted")
         await get_current_page_of_players(
             callback_query=callback_query, callback_data=PlayersCurrentPageCallbackFactory(page=callback_data.page)
         )
+
+
+@router.callback_query(SetPlayerNicknameCallbackFactory.filter())
+async def set_player_nickname_button(
+    callback_query: CallbackQuery,
+    callback_data: SetPlayerNicknameCallbackFactory,
+    state: FSMContext,
+):
+    validate_admin(callback_query.from_user.id)
+    kb = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="Назад",
+                    callback_data=ClearStatePlayerDetailCallbackFactory(
+                        player_id=callback_data.player_id,
+                        page=callback_data.page,
+                    ).pack()
+                )
+            ]
+        ]
+    )
+    await callback_query.message.edit_text("Введите новый ник игрока", reply_markup=kb)
+    await state.set_state(UpdatePlayerStates.setting_nickname)
+    await state.update_data(player_data=callback_data)
+
+@router.callback_query(ClearStatePlayerDetailCallbackFactory.filter())
+async def clear_state(
+    callback_query: CallbackQuery,
+    callback_data: ClearStatePlayerDetailCallbackFactory,
+    state: FSMContext,
+):
+    await state.clear()
+    return await player_detail(
+        callback_query=callback_query,
+        callback_data=PlayerCallbackFactory(player_id=callback_data.player_id, page=callback_data.page),
+    )
+
+@router.message(UpdatePlayerStates.setting_nickname, F.text)
+async def set_player_nickname(message: types.Message, state: FSMContext):
+    validate_admin(message.from_user.id)
+    nickname_uc: SetPlayerNicknameUseCase = container.resolve(SetPlayerNicknameUseCase)
+    player_stats_uc: GetPlayerStatsUseCase = container.resolve(GetPlayerStatsUseCase)
+    data: dict[str, SetPlayerNicknameCallbackFactory] = await state.get_data()
+    await nickname_uc.set_player_nickname(player_id=data["player_data"].player_id, nickname=message.text)
+    player_with_stats = await player_stats_uc.get_player_stats(player_id=data["player_data"].player_id)
+    await state.clear()
+    await message.bot.edit_message_text(
+        chat_id=message.chat.id,
+        message_id=data["player_data"].message_id,
+        text=_get_player_stats_text(player=player_with_stats),
+        reply_markup=_get_player_detail_keyboard(
+            current_user_id=message.from_user.id,
+            back_button_page=data["player_data"].page,
+            player_id=data["player_data"].player_id,
+            player_detail_message_id=data["player_data"].message_id,
+        ),
+        parse_mode=ParseMode.MARKDOWN,
+    )
 
 
 @router.message(F.text.lower() == "создать игрока")
@@ -190,7 +282,7 @@ async def create_player(message: types.Message, state: FSMContext):
 async def process_player_fio(message: types.Message, state: FSMContext):
     validate_admin(message.from_user.id)
     await state.update_data(fio=message.text)
-    await message.answer("Введите игровой псевдоним игрока")
+    await message.answer("Введите ник игрока")
     await state.set_state(CreatePlayerStates.waiting_nickname)
 
 

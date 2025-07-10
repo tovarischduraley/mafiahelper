@@ -5,4 +5,4 @@ from .games import (
     RawGameSchema,
     UpdateGameSchema,
 )
-from .users import CreatePlayerSchema, PlayerSchema, PlayerStatsSchema, UserSchema
+from .users import CreatePlayerSchema, PlayerSchema, PlayerStatsSchema, UpdatePlayerSchema, UserSchema

@@ -15,6 +15,7 @@ from usecases import (
     GetPlayerStatsUseCase,
     GetPlayersUseCase,
     GetSeatUseCase,
+    SetPlayerNicknameUseCase,
     UsersUseCase,
 )
 from usecases.interfaces import DBRepositoryInterface
@@ -47,3 +48,4 @@ container.register(UsersUseCase)
 container.register(AssignAsFirstKilledUseCase)
 container.register(AddToBestMoveUseCase)
 container.register(DeletePlayerUseCase)
+container.register(SetPlayerNicknameUseCase)

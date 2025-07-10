@@ -82,7 +82,7 @@ class GetPlayerStatsUseCase:
                 lambda g: g.first_killed and g.first_killed.id == player_id,
                 total_as_civilian + total_as_sheriff
             ))
-            result = self.get_best_move_stats(first_killed_games)
+            result = self._get_best_move_stats(first_killed_games)
             best_move_count_total = result[0]
             zero_mafia_best_move_count = result[1]
             one_mafia_best_move_count = result[2]
@@ -129,7 +129,7 @@ class GetPlayerStatsUseCase:
             )
 
     @staticmethod
-    def get_best_move_stats(games_as_first_killed: Iterable[GameSchema]) -> tuple[int, int, int, int, int]:
+    def _get_best_move_stats(games_as_first_killed: Iterable[GameSchema]) -> tuple[int, int, int, int, int]:
         best_move_count_total = 0
         zero_mafia_best_move_count = 0
         one_mafia_best_move_count = 0

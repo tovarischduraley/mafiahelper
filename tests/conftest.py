@@ -1,7 +1,6 @@
 import datetime
 import random
-from collections.abc import Generator
-from typing import Callable
+from collections.abc import Callable, Generator
 
 from core import GameResults, GameStatuses, Roles, get_win_result_by_player_role
 from usecases.schemas import GameSchema, PlayerInGameSchema, PlayerSchema
@@ -46,7 +45,7 @@ def _id_gen():
         yield i
 
 
-def _gen_player(fios: list[str], nicknames: list[str]) -> Generator[tuple[str, str], None, None]:
+def _gen_player(fios: list[str], nicknames: list[str]) -> Generator[tuple[str, str]]:
     while True:
         fio = random.choice(fios)
         fios.remove(fio)
@@ -72,8 +71,8 @@ def valid_player() -> PlayerSchema:
 
 
 def mafia_player(
-    seat_generator: Generator[int, None, None],
-    player_generator: Generator[tuple[str, str], None, None],
+    seat_generator: Generator[int],
+    player_generator: Generator[tuple[str, str]],
 ) -> PlayerInGameSchema:
     fio, nick = next(player_generator)
     return PlayerInGameSchema(
@@ -86,8 +85,8 @@ def mafia_player(
 
 
 def civilian_player(
-    seat_generator: Generator[int, None, None],
-    player_generator: Generator[tuple[str, str], None, None],
+    seat_generator: Generator[int],
+    player_generator: Generator[tuple[str, str]],
 ) -> PlayerInGameSchema:
     fio, nick = next(player_generator)
     return PlayerInGameSchema(
@@ -100,8 +99,8 @@ def civilian_player(
 
 
 def sheriff_player(
-    seat_generator: Generator[int, None, None],
-    player_generator: Generator[tuple[str, str], None, None],
+    seat_generator: Generator[int],
+    player_generator: Generator[tuple[str, str]],
 ) -> PlayerInGameSchema:
     fio, nick = next(player_generator)
     return PlayerInGameSchema(
@@ -114,8 +113,8 @@ def sheriff_player(
 
 
 def don_player(
-    seat_generator: Generator[int, None, None],
-    player_generator: Generator[tuple[str, str], None, None],
+    seat_generator: Generator[int],
+    player_generator: Generator[tuple[str, str]],
 ) -> PlayerInGameSchema:
     fio, nick = next(player_generator)
     return PlayerInGameSchema(

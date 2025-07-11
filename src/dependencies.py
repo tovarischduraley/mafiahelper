@@ -2,6 +2,7 @@ from punq import Container
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from config import DBConfig
+from repositories.avatars import AvatarsRepository
 from repositories.db import DBRepository
 from usecases import (
     AddToBestMoveUseCase,
@@ -15,10 +16,12 @@ from usecases import (
     GetPlayerStatsUseCase,
     GetPlayersUseCase,
     GetSeatUseCase,
+    SetPlayerAvatarUseCase,
     SetPlayerNicknameUseCase,
     UsersUseCase,
 )
 from usecases.interfaces import DBRepositoryInterface
+from usecases.interfaces.avatars_repository import AvatarsRepositoryInterface
 
 container = Container()
 db_config = DBConfig()
@@ -36,6 +39,7 @@ session_factory = async_sessionmaker(autocommit=False, autoflush=False, bind=eng
 
 container.register(DBRepositoryInterface, factory=DBRepository, session_factory=session_factory)
 container.register(DBRepository, factory=DBRepository, session_factory=session_factory)
+container.register(AvatarsRepositoryInterface, factory=AvatarsRepository)
 container.register(CreatePlayerUseCase)
 container.register(GetPlayersUseCase)
 container.register(CreateGameUseCase)
@@ -49,3 +53,4 @@ container.register(AssignAsFirstKilledUseCase)
 container.register(AddToBestMoveUseCase)
 container.register(DeletePlayerUseCase)
 container.register(SetPlayerNicknameUseCase)
+container.register(SetPlayerAvatarUseCase)

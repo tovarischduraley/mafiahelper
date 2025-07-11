@@ -76,6 +76,12 @@ class SetPlayerNicknameCallbackFactory(CallbackData, prefix="set_nickname"):
     message_id: int
 
 
+class SetPlayerAvatarCallbackFactory(CallbackData, prefix="set_avatar"):
+    player_id: int
+    page: int
+    message_id: int
+
+
 class ClearStatePlayerDetailCallbackFactory(CallbackData, prefix="clear_state_player_detail"):
     player_id: int
     page: int

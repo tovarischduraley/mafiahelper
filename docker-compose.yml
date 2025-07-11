@@ -15,8 +15,9 @@ services:
     command: "sh ./entrypoint-bot.sh"
     env_file: .env
     depends_on:
-    - db
-
+      - db
+    volumes:
+      - avatars:/app/src/api/static/img/avatars
   api:
     build: .
     container_name: mafia_api
@@ -26,8 +27,7 @@ services:
     depends_on:
       - db
     volumes:
-      - ./src/api/static:/app/src/api/static
-
+      - avatars:/app/src/api/static/img/avatars
   nginx:
     container_name: mafia_nginx
     image: nginx:latest
@@ -37,3 +37,6 @@ services:
       - ./nginx/conf.d:/etc/nginx/conf.d
     depends_on:
       - api
+volumes:
+  avatars:
+

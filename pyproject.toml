@@ -1,10 +1,11 @@
 [project]
 name = "mafia"
-version = "1.9"
+version = "1.10"
 description = "Telegram Bot for Mafia Game judging"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "aiofiles>=24.1.0",
     "aiogram>=3.15.0",
     "alembic>=1.14.0",
     "asyncpg>=0.30.0",

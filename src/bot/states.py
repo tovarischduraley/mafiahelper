@@ -7,3 +7,4 @@ class CreatePlayerStates(StatesGroup):
 
 class UpdatePlayerStates(StatesGroup):
     setting_nickname = State()
+    setting_avatar = State()

@@ -9,5 +9,6 @@ from .get_games import GetGamesUseCase
 from .get_player_stats import GetPlayerStatsUseCase
 from .get_players import GetPlayersUseCase
 from .get_seat import GetSeatUseCase
+from .set_player_avatar import SetPlayerAvatarUseCase
 from .set_player_nickname import SetPlayerNicknameUseCase
 from .users import UsersUseCase

@@ -1,4 +1,8 @@
+import asyncio
+import logging
 import math
+from contextlib import suppress
+from io import BytesIO
 
 from aiogram import F, Router, types
 from aiogram.enums import ParseMode
@@ -13,6 +17,7 @@ from bot.filters import (
     DeletePlayerCallbackFactory,
     PlayerCallbackFactory,
     PlayersCurrentPageCallbackFactory,
+    SetPlayerAvatarCallbackFactory,
     SetPlayerNicknameCallbackFactory,
 )
 from bot.states import CreatePlayerStates, UpdatePlayerStates
@@ -24,6 +29,7 @@ from usecases import (
     DeletePlayerUseCase,
     GetPlayerStatsUseCase,
     GetPlayersUseCase,
+    SetPlayerAvatarUseCase,
     SetPlayerNicknameUseCase,
 )
 from usecases.errors import ValidationError
@@ -53,6 +59,14 @@ def _get_player_detail_keyboard(
     if is_admin(user_id=current_user_id):
         builder.row(
             InlineKeyboardButton(
+                text="🖼️ Изменить аватар",
+                callback_data=SetPlayerAvatarCallbackFactory(
+                    player_id=player_id,
+                    page=back_button_page,
+                    message_id=player_detail_message_id,
+                ).pack(),
+            ),
+            InlineKeyboardButton(
                 text="✍️ Изменить ник",
                 callback_data=SetPlayerNicknameCallbackFactory(
                     player_id=player_id,
@@ -60,6 +74,8 @@ def _get_player_detail_keyboard(
                     message_id=player_detail_message_id,
                 ).pack(),
             ),
+        )
+        builder.row(
             InlineKeyboardButton(
                 text="🗑️ Удалить",
                 callback_data=DeletePlayerCallbackFactory(
@@ -206,7 +222,7 @@ async def delete_player(callback_query: CallbackQuery, callback_data: DeletePlay
     except ValidationError as e:
         await callback_query.answer(text=str(e))
     else:
-        await callback_query.answer(text="Player deleted")
+        await callback_query.answer(text="Игрок удален")
         await get_current_page_of_players(
             callback_query=callback_query, callback_data=PlayersCurrentPageCallbackFactory(page=callback_data.page)
         )
@@ -223,7 +239,7 @@ async def set_player_nickname_button(
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text="Назад",
+                    text="Отмена",
                     callback_data=ClearStatePlayerDetailCallbackFactory(
                         player_id=callback_data.player_id,
                         page=callback_data.page,
@@ -235,6 +251,86 @@ async def set_player_nickname_button(
     await callback_query.message.edit_text("Введите новый ник игрока", reply_markup=kb)
     await state.set_state(UpdatePlayerStates.setting_nickname)
     await state.update_data(player_data=callback_data)
+
+@router.callback_query(SetPlayerAvatarCallbackFactory.filter())
+async def set_player_avatar_button(
+    callback_query: CallbackQuery,
+    callback_data: SetPlayerAvatarCallbackFactory,
+    state: FSMContext,
+):
+    validate_admin(callback_query.from_user.id)
+    kb = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="Отмена",
+                    callback_data=ClearStatePlayerDetailCallbackFactory(
+                        player_id=callback_data.player_id,
+                        page=callback_data.page,
+                    ).pack()
+                )
+            ]
+        ]
+    )
+    await callback_query.message.edit_text(
+        text="Загрузите PNG файл c соотношением сторон 18:19",
+        reply_markup=kb,
+    )
+    await state.set_state(UpdatePlayerStates.setting_avatar)
+    await state.update_data(player_data=callback_data)
+
+rejected_media_groups_ids = set()
+@router.message(UpdatePlayerStates.setting_avatar, F.media_group_id)
+async def reject_album(message: types.Message):
+    if message.media_group_id not in rejected_media_groups_ids:
+        rejected_media_groups_ids.add(message.media_group_id)
+        await message.answer("Отправьте только один PNG файл\nГруппы файлов не поддерживаются")
+
+@router.message(UpdatePlayerStates.setting_avatar, F.photo)
+async def reject_photo(message: types.Message):
+    await message.answer("Отправьте фото файлом\nСжатые изображения не поддерживаются")
+
+@router.message(UpdatePlayerStates.setting_avatar, F.document)
+async def set_player_avatar(message: types.Message, state: FSMContext):
+    if not message.document.file_name.lower().endswith('.png'):
+        await message.answer("Допустимы файлы только с PNG расширением")
+        return
+    file_stream = BytesIO()
+    await message.bot.download(file=message.document.file_id, destination=file_stream)
+    avatar_uc: SetPlayerAvatarUseCase = container.resolve(SetPlayerAvatarUseCase)
+    player_stats_uc: GetPlayerStatsUseCase = container.resolve(GetPlayerStatsUseCase)
+    data: dict[str, SetPlayerNicknameCallbackFactory] = await state.get_data()
+    try:
+        await avatar_uc.set_player_avatar(
+            player_id=data["player_data"].player_id,
+            file=file_stream,
+            file_name=message.document.file_name.lower(),
+        )
+    except Exception as e:
+        logging.exception(e)
+        await message.reply("Не удалось установить аватар")
+        return
+    finally:
+        await state.clear()
+        file_stream.close()
+
+    answer = await message.reply("Аватар установлен")
+    player_with_stats = await player_stats_uc.get_player_stats(player_id=data["player_data"].player_id)
+    await message.bot.edit_message_text(
+        chat_id=message.chat.id,
+        message_id=data["player_data"].message_id,
+        text=_get_player_stats_text(player=player_with_stats),
+        reply_markup=_get_player_detail_keyboard(
+            current_user_id=message.from_user.id,
+            back_button_page=data["player_data"].page,
+            player_id=data["player_data"].player_id,
+            player_detail_message_id=data["player_data"].message_id,
+        ),
+        parse_mode=ParseMode.MARKDOWN,
+    )
+    await asyncio.sleep(3)
+    with suppress(Exception):
+        await answer.delete()
 
 @router.callback_query(ClearStatePlayerDetailCallbackFactory.filter())
 async def clear_state(
@@ -255,6 +351,7 @@ async def set_player_nickname(message: types.Message, state: FSMContext):
     player_stats_uc: GetPlayerStatsUseCase = container.resolve(GetPlayerStatsUseCase)
     data: dict[str, SetPlayerNicknameCallbackFactory] = await state.get_data()
     await nickname_uc.set_player_nickname(player_id=data["player_data"].player_id, nickname=message.text)
+    answer = await message.reply("Никнейм установлен")
     player_with_stats = await player_stats_uc.get_player_stats(player_id=data["player_data"].player_id)
     await state.clear()
     await message.bot.edit_message_text(
@@ -269,6 +366,9 @@ async def set_player_nickname(message: types.Message, state: FSMContext):
         ),
         parse_mode=ParseMode.MARKDOWN,
     )
+    await asyncio.sleep(3)
+    with suppress(Exception):
+        await answer.delete()
 
 
 @router.message(F.text.lower() == "создать игрока")
@@ -294,7 +394,7 @@ async def process_player_nickname(message: types.Message, state: FSMContext):
     player_data = await state.get_data()
     await uc.create_player(CreatePlayerSchema(**player_data))
     await message.answer(
-        text=f"Вы создали игрока!\n\nИмя: {player_data['fio']}\nПсевдоним: {player_data['nickname']}",
+        text=f"Вы создали игрока!\n\nИмя: {player_data['fio']}\nНик: {player_data['nickname']}",
         reply_markup=keyboards.admin_kb,
     )
     await state.clear()

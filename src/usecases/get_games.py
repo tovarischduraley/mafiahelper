@@ -33,3 +33,10 @@ class GetGamesUseCase:
                 case _, _:
                     games = games[offset:limit + offset]
             return games, count
+
+    async def get_last_game_in_draft(self) -> GameSchema | None:
+        async with self._db as db:
+            games = await db.get_games(status=GameStatuses.DRAFT)
+            if not games:
+                return None
+            return sorted(games, key=lambda g: g.created_at)[-1]

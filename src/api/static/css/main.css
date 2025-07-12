@@ -4,15 +4,40 @@
 }
 
 html {
+  width: 100%;
   height: 100%;
+}
+.text {
+  font-family: 'Inter';
+  font-weight: 700;
+  color: whitesmoke;
+  font-size: 17px;
 }
 
 body {
-  height: 100%;
+  height: 1080px;
+  width: 1920px;
   position: relative;
 }
 
-.container {
+.game-info {
+    display: flex;
+    position: absolute;
+    top: 20px;
+    left: 20px;
+}
+
+.game-info-item {
+    margin-right: 15px;
+    background: #313131;
+    border-radius: 10px;
+    padding: 15px;
+}
+.game-info-item .p {
+    display: inline
+}
+
+.cards-container {
     display: flex;
     width: 1920px;
     justify-content: space-between;
@@ -26,11 +51,7 @@ body {
     padding-right: 10px;
     box-sizing: border-box;
 }
-.text {
-  font-family: 'Inter';
-  font-weight: bold;
-  color: whitesmoke;
-}
+
 
 .player_card {
   display: flex;
@@ -68,9 +89,9 @@ body {
 .player_nickname {
   height: 40px;
   width: 180px;
-  position: absolute; 
-  left: 0; 
-  right: 0; 
+  position: absolute;
+  left: 0;
+  right: 0;
   margin-inline: auto; 
   width: fit-content;
 }

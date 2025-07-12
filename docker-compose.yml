@@ -24,10 +24,13 @@ services:
     restart: always
     command: "sh ./entrypoint-api.sh"
     env_file: .env
+    tty: true
     depends_on:
       - db
     volumes:
       - avatars:/app/src/api/static/img/avatars
+      - ./src/api/templates/main.html:/app/src/api/templates/main.html
+      - ./src/api/static/css:/app/src/api/static/css
   nginx:
     container_name: mafia_nginx
     image: nginx:latest

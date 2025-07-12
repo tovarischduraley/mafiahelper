@@ -3,17 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <title>Mafia</title>
-    <link href='https://fonts.googleapis.com/css?family=Inter' rel='stylesheet'>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap"
+          rel="stylesheet">
     <link href="../static/css/main.css" rel="stylesheet">
     <link rel="icon" type="image/x-icon" href="../static/img/pistol.png">
 </head>
 <body>
-    <div class="container">
-        {% if players %}
-            {% for p in players %}
-                {% include "player_card.html" %}
-            {% endfor %}
-        {% endif %}
+
+{% if game%}
+<div class="game-info">
+    {% if game.first_killed %}
+    <div class="game-info-item text">ПУ: {{game.first_killed.number}}</div>
+    {% endif %}
+    {% if game.best_move %}
+    <div class="game-info-item text">
+        ЛХ:
+        {% for p in game.best_move|sort(attribute="number") %}
+        {{ p.number }}
+        {% endfor %}
     </div>
+    {% endif %}
+</div>
+<div class="cards-container">
+    {% for p in game.players|sort(attribute="number") %}
+    {% include "player_card.html" %}
+    {% endfor %}
+</div>
+{% endif %}
 </body>
 </html>

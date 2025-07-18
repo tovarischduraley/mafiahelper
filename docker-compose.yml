@@ -10,7 +10,10 @@ services:
       - ".pgdata:/var/lib/postgresql@17/data/pgdata"
     env_file: .env
   bot:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
     container_name: mafia_bot
     command: "sh ./entrypoint-bot.sh"
     env_file: .env
@@ -19,7 +22,10 @@ services:
     volumes:
       - avatars:/app/src/api/static/img/avatars
   api:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
     container_name: mafia_api
     restart: always
     command: "sh ./entrypoint-api.sh"

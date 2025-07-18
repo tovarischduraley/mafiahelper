@@ -9,12 +9,12 @@ from bot.auth import validate_admin
 from bot.keyboards import admin_kb, user_kb
 from bot.middleware import SaveUserMiddleware
 from bot.routes import games_router, players_router
-from config import settings
+from config import get_settings
 from usecases.errors import ForbiddenError
 
 logging.basicConfig(level=logging.INFO)
 
-bot = Bot(token=settings.TELEGRAM_BOT_TOKEN)
+bot = Bot(token=get_settings().TELEGRAM_BOT_TOKEN)
 dp = Dispatcher()
 
 

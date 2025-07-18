@@ -20,25 +20,24 @@ from usecases import (
     SetPlayerNicknameUseCase,
     UsersUseCase,
 )
-from usecases.interfaces import DBRepositoryInterface
-from usecases.interfaces.avatars_repository import AvatarsRepositoryInterface
+from usecases.interfaces import AvatarsRepositoryInterface, DBRepositoryInterface
 
 container = Container()
-db_config = DBConfig()
 
-engine = create_async_engine(
-    db_config.db_url,
-    echo=False,
-    pool_size=7,
-    max_overflow=20,
-    pool_pre_ping=True,
-)
+def get_db_session_factory(config: DBConfig = DBConfig()):
+    engine = create_async_engine(
+        config.db_url,
+        echo=False,
+        pool_size=7,
+        max_overflow=20,
+        pool_pre_ping=True,
+    )
 
-session_factory = async_sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    return async_sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
-container.register(DBRepositoryInterface, factory=DBRepository, session_factory=session_factory)
-container.register(DBRepository, factory=DBRepository, session_factory=session_factory)
+container.register(DBRepositoryInterface, factory=DBRepository, session_factory=get_db_session_factory())
+container.register(DBRepository, factory=DBRepository, session_factory=get_db_session_factory())
 container.register(AvatarsRepositoryInterface, factory=AvatarsRepository)
 container.register(CreatePlayerUseCase)
 container.register(GetPlayersUseCase)

@@ -1,0 +1,33 @@
+services:
+  test_db:
+    image: postgres:17-alpine
+    container_name: test_mafia_db
+    environment:
+      POSTGRES_DB: test_db
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: test_password
+    volumes:
+      - ./tests/db/test_dump.sql:/docker-entrypoint-initdb.d/init.sql
+      - test_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U test_user -d test_db" ]
+      interval: 2s
+      timeout: 5s
+      retries: 5
+  tests:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: test
+    command: "uv run pytest -v -s ."
+    environment:
+      DB_HOST: test_db
+      DB_PASSWORD: test_password
+      DB_USER: test_user
+      DB_NAME: test_db
+      DB_PORT: 5432
+    depends_on:
+      test_db:
+        condition: service_healthy
+volumes:
+  test_data:

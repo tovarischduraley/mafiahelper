@@ -1,5 +1,3 @@
-from collections.abc import Iterable
-
 from core import GameStatuses
 from usecases.interfaces import DBRepositoryInterface
 from usecases.schemas import GameSchema
@@ -17,7 +15,7 @@ class GetGamesUseCase:
         self,
         limit: int | None = None,
         offset: int | None = None,
-    ) -> tuple[Iterable[GameSchema], int]:
+    ) -> tuple[list[GameSchema], int]:
         async with self._db as db:
             games = await db.get_games(
                 status=GameStatuses.ENDED,

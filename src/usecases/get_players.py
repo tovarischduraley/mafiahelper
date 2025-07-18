@@ -1,5 +1,3 @@
-from collections.abc import Iterable
-
 from usecases.interfaces import DBRepositoryInterface
 from usecases.schemas import PlayerSchema
 
@@ -12,7 +10,7 @@ class GetPlayersUseCase:
         self,
         limit: int | None = None,
         offset: int | None = None,
-    ) -> tuple[Iterable[PlayerSchema], int]:
+    ) -> tuple[list[PlayerSchema], int]:
         async with self._db as db:
             players = await db.get_players(
                 limit=limit,

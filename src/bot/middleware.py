@@ -1,9 +1,9 @@
-from typing import Callable
+from collections.abc import Callable
 
 from aiogram import BaseMiddleware
 from aiogram.types import TelegramObject, User
 
-from config import settings
+from config import get_settings
 from dependencies import container
 from usecases import UsersUseCase
 from usecases.schemas import UserSchema
@@ -21,8 +21,8 @@ class SaveUserMiddleware(BaseMiddleware):
                 last_name=user.last_name,
             )
             await users_uc.save_user(user_to_save)
-            if user.id != settings.ADMIN_ID:
-                await event.bot.send_message(settings.ADMIN_ID, text=self._get_new_user_message(user_to_save))
+            if user.id != get_settings().ADMIN_ID:
+                await event.bot.send_message(get_settings().ADMIN_ID, text=self._get_new_user_message(user_to_save))
         return await handler(event, data)
 
     @staticmethod

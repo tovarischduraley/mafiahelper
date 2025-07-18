@@ -18,5 +18,5 @@ class Settings(BaseSettings):
     TELEGRAM_BOT_TOKEN: str
     ADMIN_ID: int
 
-
-settings = Settings()
+def get_settings():
+    return Settings()

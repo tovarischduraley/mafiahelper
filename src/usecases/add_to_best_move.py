@@ -1,7 +1,7 @@
 import core
 from usecases.errors import ValidationError
 from usecases.interfaces.db import DBRepositoryInterface
-from usecases.schemas.games import PlayerInGameSchema
+from usecases.schemas import PlayerInGameSchema
 
 
 class AddToBestMoveUseCase:

@@ -16,9 +16,8 @@ from tests.conftest import (
     valid_player,
 )
 from tests.mocks import FakeDBRepository
-from usecases import AssignPlayerToSeatUseCase, CreateGameUseCase, EndGameUseCase
+from usecases import AssignPlayerToSeatUseCase, CreateGameUseCase, EndGameUseCase, GetGamesUseCase
 from usecases.errors import ValidationError
-from usecases.get_games import GetGamesUseCase
 from usecases.schemas import GameSchema, PlayerSchema
 
 

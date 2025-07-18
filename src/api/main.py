@@ -5,16 +5,15 @@ from starlette.staticfiles import StaticFiles
 from starlette.templating import Jinja2Templates
 
 from dependencies import container
-from usecases import GetPlayersUseCase
+from usecases import GetGamesUseCase
 
 app = FastAPI(title="MafiaAPI")
 app.mount("/static", StaticFiles(directory="api/static"), name="static")
 templates = Jinja2Templates(directory="api/templates")
 
 
-@app.get("/players", description="returns players for last game in draft")
+@app.get("/players", description="returns last game in draft info")
 async def get_players(request: Request) -> HTMLResponse:
-    uc: GetPlayersUseCase = container.resolve(GetPlayersUseCase)
-    players = await uc.get_players_for_stream()
-    s = sorted(players, key=lambda p: p.number) if players else None
-    return templates.TemplateResponse(request=request, name="main.html", context={"players": s})
+    uc: GetGamesUseCase = container.resolve(GetGamesUseCase)
+    game = await uc.get_last_game_in_draft()
+    return templates.TemplateResponse(request=request, name="main.html", context={"game": game})

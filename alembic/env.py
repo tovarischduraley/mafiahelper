@@ -10,12 +10,12 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from alembic import context
 
 sys.path.append(os.path.join(sys.path[0], "src"))
-from config import settings
+from config import DBConfig
 from repositories.db.models import Base
 
 config = context.config
 
-config.set_main_option("sqlalchemy.url", settings.db_config.db_url)
+config.set_main_option("sqlalchemy.url", DBConfig().db_url)
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)

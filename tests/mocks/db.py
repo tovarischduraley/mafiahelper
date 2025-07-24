@@ -12,6 +12,7 @@ from usecases.schemas import (
     PlayerSchema,
     RawGameSchema,
     UpdateGameSchema,
+    UpdatePlayerSchema,
     UserSchema,
 )
 
@@ -69,10 +70,21 @@ class FakeDBRepository(DBRepositoryInterface):
         try:
             return self._players[player_id]
         except KeyError as e:
-            raise NotFoundError(f"TEST user id={player_id} not found") from e
+            raise NotFoundError(f"TEST player id={player_id} not found") from e
 
     async def get_players_count(self) -> int:
         return len(self._players)
+
+    async def delete_player(self, player_id) -> None:
+        if player_id not in self._players:
+            raise NotFoundError(f"TEST player id={player_id} not found")
+        del self._players[player_id]
+
+    async def update_player(self, player_id: int, data: UpdatePlayerSchema) -> None:
+        if player_id not in self._players:
+            raise NotFoundError(f"TEST player id={player_id} not found")
+        for k, v in data.model_dump(exclude_unset=True).items():
+            setattr(self, k, v)
 
     async def get_ended_games_count(self) -> int:
         return len(list(filter(lambda g: g.status == GameStatuses.ENDED, self._games.values())))

@@ -7,6 +7,11 @@ class CreatePlayerSchema(BaseModel):
     fio: str | None = None
     nickname: str | None = None
 
+class UpdatePlayerSchema(BaseModel):
+    fio: str | None = None
+    nickname: str | None = None
+    avatar_path: str | None = None
+
 
 class UserSchema(BaseModel):
     telegram_id: int

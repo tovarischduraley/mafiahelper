@@ -4,7 +4,7 @@ from itertools import permutations
 
 import pytest
 
-from usecases.get_seat import GetSeatUseCase
+from usecases import GetSeatUseCase
 
 
 @pytest.mark.parametrize(

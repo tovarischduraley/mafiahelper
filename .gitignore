@@ -8,3 +8,5 @@ pgdata
 .pgdata
 .DS_Store
 env
+dumps
+**/avatars
